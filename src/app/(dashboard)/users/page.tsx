@@ -79,46 +79,46 @@ export default function UsersPage() {
     users.length > 0
       ? users
       : [
-          {
-            userId: 1,
-            ownerName: "John Doe",
-            email: "john@example.com",
-            phone: "9876543210",
-            alternatePhone: "9876543211",
-            businessName: "Tech Solutions",
-            isActive: true,
-            subscriptionStatus: "ACTIVE",
-            subscriptionPlan: "Premium",
-            subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
-            createdAt: "2025-01-01T10:00:00.000Z",
-          },
-          {
-            userId: 2,
-            ownerName: "Jane Smith",
-            email: "jane@example.com",
-            phone: "9876543220",
-            alternatePhone: "9876543221",
-            businessName: "Creative Studio",
-            isActive: true,
-            subscriptionStatus: "ACTIVE",
-            subscriptionPlan: "Basic",
-            subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
-            createdAt: "2025-02-15T10:00:00.000Z",
-          },
-          {
-            userId: 3,
-            ownerName: "Bob Johnson",
-            email: "bob@example.com",
-            phone: "9876543230",
-            alternatePhone: "9876543231",
-            businessName: "Business Services",
-            isActive: false,
-            subscriptionStatus: "INACTIVE",
-            subscriptionPlan: "Standard",
-            subscriptionExpiryDate: "2025-12-31T23:59:59.999Z",
-            createdAt: "2024-12-01T10:00:00.000Z",
-          },
-        ]
+        {
+          userId: 1,
+          ownerName: "John Doe",
+          email: "john@example.com",
+          phone: "9876543210",
+          alternatePhone: "9876543211",
+          businessName: "Tech Solutions",
+          isActive: true,
+          subscriptionStatus: "ACTIVE",
+          subscriptionPlan: "Premium",
+          subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
+          createdAt: "2025-01-01T10:00:00.000Z",
+        },
+        {
+          userId: 2,
+          ownerName: "Jane Smith",
+          email: "jane@example.com",
+          phone: "9876543220",
+          alternatePhone: "9876543221",
+          businessName: "Creative Studio",
+          isActive: true,
+          subscriptionStatus: "ACTIVE",
+          subscriptionPlan: "Basic",
+          subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
+          createdAt: "2025-02-15T10:00:00.000Z",
+        },
+        {
+          userId: 3,
+          ownerName: "Bob Johnson",
+          email: "bob@example.com",
+          phone: "9876543230",
+          alternatePhone: "9876543231",
+          businessName: "Business Services",
+          isActive: false,
+          subscriptionStatus: "INACTIVE",
+          subscriptionPlan: "Standard",
+          subscriptionExpiryDate: "2025-12-31T23:59:59.999Z",
+          createdAt: "2024-12-01T10:00:00.000Z",
+        },
+      ]
 
   return (
     <div>
@@ -163,7 +163,7 @@ export default function UsersPage() {
                   </td>
                 </tr>
               ) : (
-                displayUsers.map((user) => (
+                displayUsers.map((user: User) => (
                   <tr key={user.userId} className="border-b border-border hover:bg-muted/50">
                     <td className="px-6 py-3 text-sm font-medium">{user.businessName}</td>
                     <td className="px-6 py-3 text-sm">{user.ownerName}</td>
@@ -171,11 +171,10 @@ export default function UsersPage() {
                     <td className="px-6 py-3 text-sm text-muted-foreground">{user.phone}</td>
                     <td className="px-6 py-3 text-sm">{user.subscriptionPlan}</td>
                     <td className="px-6 py-3 text-sm">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${
-                        user.subscriptionStatus === "ACTIVE"
+                      <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
-                      }`}>
+                        }`}>
                         {user.subscriptionStatus}
                       </span>
                     </td>
@@ -186,11 +185,10 @@ export default function UsersPage() {
                           <span className="text-xs text-muted-foreground">Updating...</span>
                         </div>
                       ) : (
-                        <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${
-                          user.isActive
+                        <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.isActive
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
-                        }`}>
+                          }`}>
                           {user.isActive ? "Active" : "Not Active"}
                         </span>
                       )}

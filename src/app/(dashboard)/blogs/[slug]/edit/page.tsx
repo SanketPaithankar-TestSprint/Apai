@@ -53,7 +53,7 @@ export default function EditBlogPage() {
             if (!blogId) {
                 throw new Error("Blog ID not found");
             }
-            
+
             await BlogService.update(blogId.toString(), data);
             toast.success("Blog updated successfully");
             router.push("/blogs");
@@ -84,7 +84,7 @@ export default function EditBlogPage() {
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
-            <BlogForm blog={blog} onSubmit={handleSubmit} isLoading={saving} />
+            <BlogForm initialData={blog} onSubmit={handleSubmit} isLoading={saving} />
         </div>
     );
 }

@@ -25,10 +25,13 @@ export interface CreateBlogDto {
     title: string;
     content: string;
     status: "Draft" | "Published";
+    searchQuery?: string;
+    coverImageUrl?: string;
     imageUrl?: string;
     excerpt?: string;
     metaTitle?: string;
     metaDescription?: string;
+    slug: string;
 }
 
 export interface UpdateBlogDto extends Partial<CreateBlogDto> { }
