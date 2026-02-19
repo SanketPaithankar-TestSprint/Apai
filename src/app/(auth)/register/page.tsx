@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import Link from "next/link"
+import { useRouter } from "next/navigation" // Added useRouter
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,62 +18,55 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { AuthLayout } from "@/components/auth-layout"
+import { toast } from "sonner" // Assuming sonner is available since used in other files
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(6, "Please confirm your password"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  })
+const registerSchema = z.object({
+  fullName: z.string().min(2, "Full Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  adminKey: z.string().min(1, "Admin Key is required"),
+  role: z.string(),
+})
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      fullName: "",
       email: "",
       password: "",
-      confirmPassword: "",
+      adminKey: "",
+      role: "super_admin",
     },
   })
 
   async function onSubmit(values: RegisterFormValues) {
     try {
       setIsLoading(true)
-      setError(null)
 
-      // TODO: Replace with your actual registration API call
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/api/admin/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-        }),
+        body: JSON.stringify(values),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.message || "Registration failed")
       }
 
-      // TODO: Handle successful registration (redirect to login, etc.)
-      console.log("Registration successful")
+      toast.success("Registration successful! Please login.")
+      router.push("/login")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      toast.error(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -85,15 +79,9 @@ export default function RegisterPage() {
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {error && (
-            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-              {error}
-            </div>
-          )}
-
           <FormField
             control={form.control}
-            name="name"
+            name="fullName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium">Full Name</FormLabel>
@@ -153,13 +141,13 @@ export default function RegisterPage() {
 
           <FormField
             control={form.control}
-            name="confirmPassword"
+            name="adminKey"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">Confirm Password</FormLabel>
+                <FormLabel className="text-xs font-medium">Admin Key</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="••••••••"
+                    placeholder="Enter Admin Key"
                     type="password"
                     disabled={isLoading}
                     className="border-0 border-b rounded-none px-0 focus-visible:ring-0"
