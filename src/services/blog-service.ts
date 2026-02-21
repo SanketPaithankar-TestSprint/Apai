@@ -18,7 +18,7 @@ export const BlogService = {
 
     async create(data: CreateBlogDto & { coverImageFile?: File }): Promise<Blog> {
         const formData = new FormData();
-        
+
         // Add blog data as JSON string
         const blogData = {
             title: data.title,
@@ -30,10 +30,10 @@ export const BlogService = {
             // Don't send coverImageUrl if we have the actual file - only send if no file
             coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
         };
-        
+
         console.log("Blog data to send:", JSON.stringify(blogData, null, 2));
         formData.append("data", JSON.stringify(blogData));
-        
+
         // Add cover image file if provided
         if (data.coverImageFile) {
             console.log("Adding cover image file:", data.coverImageFile.name, "Size:", data.coverImageFile.size);
@@ -46,13 +46,13 @@ export const BlogService = {
                 method: "POST",
                 body: formData,
             });
-            
+
             console.log("Response status:", response.status);
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error("Response error (raw):", errorText);
-                
+
                 // Try to parse as JSON for better logging
                 try {
                     const errorJson = JSON.parse(errorText);
@@ -60,10 +60,10 @@ export const BlogService = {
                 } catch (e) {
                     // If not JSON, just show the raw text
                 }
-                
+
                 throw new Error(`Failed to create blog: ${response.status} - ${errorText}`);
             }
-            
+
             const result = await response.json();
             console.log("Blog created:", result);
             return result;
@@ -73,13 +73,33 @@ export const BlogService = {
         }
     },
 
-    async update(id: string, data: UpdateBlogDto): Promise<Blog> {
+    async update(id: string, data: UpdateBlogDto & { coverImageFile?: File }): Promise<Blog> {
+        const formData = new FormData();
+
+        const blogData = {
+            title: data.title,
+            slug: data.slug,
+            content: data.content,
+            excerpt: data.excerpt || null,
+            metaTitle: data.metaTitle || null,
+            metaDescription: data.metaDescription || null,
+            coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
+        };
+
+        formData.append("data", JSON.stringify(blogData));
+
+        if (data.coverImageFile) {
+            formData.append("coverImage", data.coverImageFile);
+        }
+
         const response = await fetch(`${API_URL}/${id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+            body: formData,
         });
-        if (!response.ok) throw new Error("Failed to update blog");
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update blog: ${response.status} - ${errorText}`);
+        }
         return response.json();
     },
 

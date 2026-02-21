@@ -13,13 +13,27 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-
 import { Blog, CreateBlogDto } from "@/types/blog";
+import { RichTextEditor } from "@/components/blogs/rich-text-editor";
 import { useState } from "react";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { CDN_BASE_URL } from "@/constants/api";
+
+/** Build an absolute URL for image preview. Handles blob URLs, full URLs, and relative CDN paths. */
+function buildPreviewUrl(value: string): string | null {
+    if (!value || !value.trim()) return null;
+    // Already a blob or data URL (newly selected file)
+    if (value.startsWith("blob:") || value.startsWith("data:")) return value;
+    // Already a full URL
+    try { new URL(value); return value; } catch { }
+    // Relative CDN path — prepend CDN base
+    if (CDN_BASE_URL && CDN_BASE_URL !== "undefined") {
+        try { const full = `${CDN_BASE_URL}${value}`; new URL(full); return full; } catch { }
+    }
+    return null;
+}
 
 const blogSchema = z.object({
     title: z.string().min(1, "Title is required"),
@@ -67,7 +81,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
         try {
             // Store the file for later submission
             setSelectedImageFile(file);
-            
+
             // Create a preview URL
             const previewUrl = URL.createObjectURL(file);
             form.setValue("coverImageUrl", previewUrl);
@@ -117,7 +131,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
             ...formData,
             coverImageFile: selectedImageFile || undefined,
         };
-        
+
         console.log("Form submission data:", {
             title: submitData.title,
             slug: submitData.slug,
@@ -189,7 +203,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                         <FormItem>
                             <FormLabel>Excerpt (Optional)</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Short summary..." className="h-20" {...field} />
+                                <textarea placeholder="Short summary..." className="h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -235,11 +249,10 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                             <FormControl>
                                 <div className="flex flex-col gap-4">
                                     <div
-                                        className={`border-2 border-dashed rounded-lg p-8 transition-colors ${
-                                            dragActive
-                                                ? "border-primary bg-primary/5"
-                                                : "border-muted-foreground/25 hover:border-muted-foreground/50"
-                                        }`}
+                                        className={`border-2 border-dashed rounded-lg p-8 transition-colors ${dragActive
+                                            ? "border-primary bg-primary/5"
+                                            : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                                            }`}
                                         onDragEnter={handleDrag}
                                         onDragLeave={handleDrag}
                                         onDragOver={handleDrag}
@@ -271,18 +284,21 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                                         </div>
                                     </div>
 
-                                    {field.value && (
-                                        <div className="relative h-48 w-full md:w-1/2 rounded-md overflow-hidden border">
-                                            <Image src={field.value} alt="Cover" fill className="object-cover" />
-                                            <button
-                                                type="button"
-                                                onClick={() => form.setValue("coverImageUrl", "")}
-                                                className="absolute top-2 right-2 bg-destructive/90 hover:bg-destructive text-white rounded-full p-1 transition-colors"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const previewUrl = buildPreviewUrl(field.value || "");
+                                        return previewUrl ? (
+                                            <div className="relative h-48 w-full md:w-1/2 rounded-md overflow-hidden border">
+                                                <Image src={previewUrl} alt="Cover" fill className="object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => form.setValue("coverImageUrl", "")}
+                                                    className="absolute top-2 right-2 bg-destructive/90 hover:bg-destructive text-white rounded-full p-1 transition-colors"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ) : null;
+                                    })()}
 
                                     <input
                                         id="image-upload"
@@ -306,10 +322,10 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                         <FormItem>
                             <FormLabel>Content</FormLabel>
                             <FormControl>
-                                <Textarea
-                                    placeholder="Blog content..."
-                                    className="min-h-[200px]"
-                                    {...field}
+                                <RichTextEditor
+                                    value={field.value || ""}
+                                    onChange={(html) => field.onChange(html)}
+                                    placeholder="Start writing your blog content..."
                                 />
                             </FormControl>
                             <FormMessage />

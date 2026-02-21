@@ -25,7 +25,7 @@ export function BlogCard({ blog, onDelete }: BlogCardProps) {
     // Validate image URL path and CDN base URL
     const isValidImagePath = imageUrlPath && imageUrlPath.trim() && !imageUrlPath.includes("undefined");
     const isValidCdnUrl = CDN_BASE_URL && CDN_BASE_URL.trim() && CDN_BASE_URL !== "undefined";
-    
+
     // Construct full CDN URL only if both parts are valid
     let image: string | null = null;
     if (isValidImagePath && isValidCdnUrl) {
@@ -37,7 +37,7 @@ export function BlogCard({ blog, onDelete }: BlogCardProps) {
             image = null;
         }
     }
-    
+
     // Use slug or id for links. Note: If id is missing, ensure backend supports slug.
     const linkId = blog.slug || blog.id!;
 
@@ -92,7 +92,7 @@ export function BlogCard({ blog, onDelete }: BlogCardProps) {
                     <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => onDelete(blog.id || blog.slug)}
+                        onClick={() => onDelete(blog.id != null ? blog.id.toString() : blog.slug)}
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>

@@ -54,18 +54,36 @@ export async function PUT(
     }
 
     try {
-        const body = await request.json();
+        const formData = await request.formData();
+
+        // Log what we received (mirrors POST handler)
+        const keys = Array.from(formData.keys());
+        console.log("PUT received formData keys:", keys);
+
+        const dataJson = formData.get("data");
+        if (dataJson) {
+            try {
+                const parsedData = JSON.parse(dataJson as string);
+                console.log("PUT parsed data field:", JSON.stringify(parsedData, null, 2));
+            } catch (e) {
+                console.log("Could not parse data field:", dataJson);
+            }
+        }
+
+        console.log("Forwarding PUT to backend URL:", `${API_ENDPOINTS.BLOGS}/${id}`);
         const response = await fetch(`${API_ENDPOINTS.BLOGS}/${id}`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(body),
+            body: formData,
         });
 
+        console.log("Backend PUT response status:", response.status);
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = await response.text().catch(() => "");
+            console.error("Backend PUT error response:", errorData);
             return NextResponse.json(
                 { message: "Failed to update blog", details: errorData },
                 { status: response.status }

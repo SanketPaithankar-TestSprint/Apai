@@ -67,7 +67,7 @@ export default function BlogsPage() {
     const imageUrlPath = blog.coverImageUrl || blog.imageUrl;
     const isValidImagePath = imageUrlPath && imageUrlPath.trim() && !imageUrlPath.includes("undefined");
     const isValidCdnUrl = CDN_BASE_URL && CDN_BASE_URL.trim() && CDN_BASE_URL !== "undefined";
-    
+
     if (isValidImagePath && isValidCdnUrl) {
       try {
         const fullUrl = `${CDN_BASE_URL}${imageUrlPath}`;
@@ -173,7 +173,7 @@ export default function BlogsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => handleDelete(blog.id!)}
+                            onClick={() => handleDelete(blog.id != null ? blog.id.toString() : blog.slug)}
                           >
                             Delete
                           </DropdownMenuItem>

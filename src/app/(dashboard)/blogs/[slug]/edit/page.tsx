@@ -18,13 +18,9 @@ export default function EditBlogPage() {
     useEffect(() => {
         const fetchBlog = async () => {
             try {
-                // Fetch blog by slug from the API
-                const response = await fetch(`${process.env.NEXT_PUBLIC_JAVA_BACKEND_URL}v1/blogs/${slug}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
+                // Use the authenticated Next.js proxy to GET by slug
+                // This returns the full object including the numeric `id`
+                const response = await fetch(`/api/blogs/by-slug/${slug}`);
 
                 if (!response.ok) {
                     throw new Error("Failed to fetch blog");
@@ -48,7 +44,6 @@ export default function EditBlogPage() {
     const handleSubmit = async (data: any) => {
         setSaving(true);
         try {
-            // Assuming you have an API endpoint to update by slug
             const blogId = blog?.id;
             if (!blogId) {
                 throw new Error("Blog ID not found");
@@ -82,9 +77,11 @@ export default function EditBlogPage() {
     }
 
     return (
-        <div>
+        <div className="p-6 max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
-            <BlogForm initialData={blog} onSubmit={handleSubmit} isLoading={saving} />
+            <div className="border rounded-lg p-6 bg-card">
+                <BlogForm initialData={blog} onSubmit={handleSubmit} isLoading={saving} />
+            </div>
         </div>
     );
 }

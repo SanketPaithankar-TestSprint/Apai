@@ -1,8 +1,9 @@
 export interface Blog {
-    id?: string; // Optional because list view might not return it? Or maybe slug is unique.
+    id?: number; // Numeric ID from backend (used for PUT/DELETE by ID)
     title: string;
-    content?: string; // Optional in list view
-    author?: string; // Optional in list view
+    content?: string; // HTML string - populated in detail/edit view
+    author?: string;
+    authorId?: number;
     imageUrl?: string; // Deprecated, use coverImageUrl
     coverImageUrl?: string;
     excerpt?: string;
@@ -12,6 +13,8 @@ export interface Blog {
     status?: "Draft" | "Published" | "Archived";
     createdAt?: string;
     updatedAt?: string;
+    readTimeMinutes?: number;
+    readCount?: number;
 }
 
 export interface BlogListResponse {
