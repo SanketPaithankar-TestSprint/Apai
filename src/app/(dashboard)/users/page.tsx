@@ -2,13 +2,42 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { MoreVertical } from "lucide-react"
+import { MoreVertical, Plus, FileText, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface User {
   userId: number
@@ -24,9 +53,290 @@ interface User {
   createdAt: string | null
 }
 
+// ─── Edit Subscription Modal ────────────────────────────────────────────────
+function EditSubscriptionModal({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: User
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const queryClient = useQueryClient()
+  const [status, setStatus] = useState(user.subscriptionStatus || "ACTIVE")
+  const [plan, setPlan] = useState(user.subscriptionPlan || "STARTER")
+  const [durationMonths, setDurationMonths] = useState("1")
+  const [durationDays, setDurationDays] = useState("0")
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/admin/users/${user.userId}/subscription`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status,
+          plan,
+          durationMonths: parseInt(durationMonths) || 0,
+          durationDays: parseInt(durationDays) || 0,
+        }),
+      })
+      if (!response.ok) throw new Error("Failed to update subscription")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success("Subscription updated successfully")
+      onOpenChange(false)
+    },
+    onError: () => {
+      toast.error("Failed to update subscription")
+    },
+  })
+
+  const clearMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/admin/users/${user.userId}/subscription`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      })
+      if (!response.ok) throw new Error("Failed to clear subscription")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success("Subscription cleared successfully")
+      onOpenChange(false)
+    },
+    onError: () => {
+      toast.error("Failed to clear subscription")
+    },
+  })
+
+  const isSubmitting = updateMutation.isPending || clearMutation.isPending
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Subscription</DialogTitle>
+          <DialogDescription>
+            Update subscription for <strong>{user.ownerName}</strong> ({user.email})
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Status</label>
+            <Select value={status} onValueChange={setStatus} disabled={isSubmitting}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
+                <SelectItem value="CANCELED">Canceled</SelectItem>
+                <SelectItem value="TEST">Test</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Plan</label>
+            <Select value={plan} onValueChange={setPlan} disabled={isSubmitting}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select plan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="STARTER">Starter</SelectItem>
+                <SelectItem value="PROFESSIONAL">Professional</SelectItem>
+                <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Duration (Months)</label>
+              <Input
+                type="number"
+                min="0"
+                value={durationMonths}
+                onChange={(e) => setDurationMonths(e.target.value)}
+                disabled={isSubmitting}
+                placeholder="0"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Duration (Days)</label>
+              <Input
+                type="number"
+                min="0"
+                value={durationDays}
+                onChange={(e) => setDurationDays(e.target.value)}
+                disabled={isSubmitting}
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="destructive"
+            onClick={() => clearMutation.mutate()}
+            disabled={isSubmitting}
+            className="mr-auto"
+          >
+            {clearMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Clearing...
+              </>
+            ) : (
+              "Clear Subscription"
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={isSubmitting}
+          >
+            {updateMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Create Test Account Modal ──────────────────────────────────────────────
+function CreateTestAccountModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const queryClient = useQueryClient()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [name, setName] = useState("")
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/admin/users/test-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      })
+      if (!response.ok) throw new Error("Failed to create test account")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success("Test account created successfully")
+      setEmail("")
+      setPassword("")
+      setName("")
+      onOpenChange(false)
+    },
+    onError: () => {
+      toast.error("Failed to create test account")
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create Test Account</DialogTitle>
+          <DialogDescription>
+            Create a dummy test user with ACTIVE status and TEST subscription.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Full Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Test User"
+              disabled={createMutation.isPending}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Email</label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="test@example.com"
+              disabled={createMutation.isPending}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Password</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={createMutation.isPending}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={createMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending || !email || !password || !name}
+          >
+            {createMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Creating...
+              </>
+            ) : (
+              "Create Test Account"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Main Users Page ────────────────────────────────────────────────────────
 export default function UsersPage() {
   const queryClient = useQueryClient()
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
+
+  // Modal states
+  const [editUser, setEditUser] = useState<User | null>(null)
+  const [deleteUser, setDeleteUser] = useState<User | null>(null)
+  const [showCreateTest, setShowCreateTest] = useState(false)
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -43,7 +353,6 @@ export default function UsersPage() {
       }
 
       const data = await response.json()
-      // Handle different response formats
       const usersList = Array.isArray(data) ? data : data.data || data.users || []
       return usersList
     },
@@ -65,15 +374,45 @@ export default function UsersPage() {
       return response.json()
     },
     onSuccess: () => {
-      // Invalidate the users query to refetch the data
       queryClient.invalidateQueries({ queryKey: ["users"] })
       setTogglingUserId(null)
     },
     onError: (error) => {
       console.error("Error toggling status:", error)
+      toast.error("Failed to toggle user status")
       setTogglingUserId(null)
     },
   })
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user")
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success("User and all associated data deleted successfully")
+      setDeleteUser(null)
+    },
+    onError: () => {
+      toast.error("Failed to delete user")
+      setDeleteUser(null)
+    },
+  })
+
+  const handleViewLicense = (userId: number) => {
+    window.open(`/api/admin/users/${userId}/business-license`, "_blank")
+  }
 
   const displayUsers =
     users.length > 0
@@ -122,8 +461,16 @@ export default function UsersPage() {
 
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-2">Users</h1>
-      <p className="text-muted-foreground mb-8">Manage all users in your system</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Users</h1>
+          <p className="text-muted-foreground">Manage all users in your system</p>
+        </div>
+        <Button onClick={() => setShowCreateTest(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Generate Test User
+        </Button>
+      </div>
 
       {isLoading && (
         <div className="flex items-center justify-center py-8">
@@ -211,14 +558,12 @@ export default function UsersPage() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem disabled>
-                            Edit
+                          <DropdownMenuItem onClick={() => setEditUser(user)}>
+                            Edit Subscription
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            disabled
-                          >
-                            Delete
+                          <DropdownMenuItem onClick={() => handleViewLicense(user.userId)}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            View Business License
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -227,6 +572,13 @@ export default function UsersPage() {
                             }}
                           >
                             {user.isActive ? "Deactivate" : "Activate"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDeleteUser(user)}
+                          >
+                            Delete User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -238,6 +590,56 @@ export default function UsersPage() {
           </table>
         </div>
       )}
+
+      {/* Edit Subscription Modal */}
+      {editUser && (
+        <EditSubscriptionModal
+          user={editUser}
+          open={!!editUser}
+          onOpenChange={(open) => {
+            if (!open) setEditUser(null)
+          }}
+        />
+      )}
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => { if (!open) setDeleteUser(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deleteUser?.ownerName}</strong> ({deleteUser?.email}) and all associated data including Shops, Employees, Customers, and Documents. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteUserMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (deleteUser) {
+                  deleteUserMutation.mutate(deleteUser.userId)
+                }
+              }}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Yes, Delete User"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Create Test Account Modal */}
+      <CreateTestAccountModal
+        open={showCreateTest}
+        onOpenChange={setShowCreateTest}
+      />
     </div>
   )
 }
