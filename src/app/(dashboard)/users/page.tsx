@@ -14,14 +14,14 @@ interface User {
   userId: number
   email: string
   ownerName: string
-  phone: string
-  alternatePhone: string
-  businessName: string
+  phone: string | null
+  alternatePhone: string | null
+  businessName: string | null
   isActive: boolean
-  subscriptionStatus: string
-  subscriptionPlan: string
-  subscriptionExpiryDate: string
-  createdAt: string
+  subscriptionStatus: string | null
+  subscriptionPlan: string | null
+  subscriptionExpiryDate: string | null
+  createdAt: string | null
 }
 
 export default function UsersPage() {
@@ -149,8 +149,11 @@ export default function UsersPage() {
                 <th className="px-6 py-3 text-left text-sm font-medium">Owner Name</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Email</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Phone</th>
+                <th className="px-6 py-3 text-left text-sm font-medium">Alternate Phone</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Subscription Plan</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Subscription Status</th>
+                <th className="px-6 py-3 text-left text-sm font-medium">Expiry Date</th>
+                <th className="px-6 py-3 text-left text-sm font-medium">Created At</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>
               </tr>
@@ -158,25 +161,32 @@ export default function UsersPage() {
             <tbody>
               {displayUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-6 py-8 text-center text-muted-foreground">
                     No users found
                   </td>
                 </tr>
               ) : (
                 displayUsers.map((user: User) => (
                   <tr key={user.userId} className="border-b border-border hover:bg-muted/50">
-                    <td className="px-6 py-3 text-sm font-medium">{user.businessName}</td>
-                    <td className="px-6 py-3 text-sm">{user.ownerName}</td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.email}</td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.phone}</td>
-                    <td className="px-6 py-3 text-sm">{user.subscriptionPlan}</td>
+                    <td className="px-6 py-3 text-sm font-medium">{user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}</td>
+                    <td className="px-6 py-3 text-sm">{user.ownerName || "N/A"}</td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.email || "N/A"}</td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.phone || "N/A"}</td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.alternatePhone || "N/A"}</td>
+                    <td className="px-6 py-3 text-sm">{user.subscriptionPlan || "N/A"}</td>
                     <td className="px-6 py-3 text-sm">
                       <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
                         }`}>
-                        {user.subscriptionStatus}
+                        {user.subscriptionStatus || "N/A"}
                       </span>
+                    </td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">
+                      {user.subscriptionExpiryDate ? new Date(user.subscriptionExpiryDate).toLocaleDateString() : "N/A"}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="px-6 py-3 text-sm">
                       {togglingUserId === user.userId ? (
@@ -186,8 +196,8 @@ export default function UsersPage() {
                         </div>
                       ) : (
                         <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
                           }`}>
                           {user.isActive ? "Active" : "Not Active"}
                         </span>
