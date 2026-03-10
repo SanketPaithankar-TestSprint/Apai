@@ -65,7 +65,7 @@ function EditSubscriptionModal({
 }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState(user.subscriptionStatus || "ACTIVE")
-  const [plan, setPlan] = useState(user.subscriptionPlan || "STARTER")
+  const [plan, setPlan] = useState(user.subscriptionPlan || "BASIC")
   const [durationMonths, setDurationMonths] = useState("1")
   const [durationDays, setDurationDays] = useState("0")
 
@@ -135,8 +135,7 @@ function EditSubscriptionModal({
               <SelectContent>
                 <SelectItem value="ACTIVE">Active</SelectItem>
                 <SelectItem value="INACTIVE">Inactive</SelectItem>
-                <SelectItem value="CANCELED">Canceled</SelectItem>
-                <SelectItem value="TEST">Test</SelectItem>
+                <SelectItem value="PAST_DUE">Past Due</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -148,8 +147,9 @@ function EditSubscriptionModal({
                 <SelectValue placeholder="Select plan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="STARTER">Starter</SelectItem>
-                <SelectItem value="PROFESSIONAL">Professional</SelectItem>
+                <SelectItem value="TEST">Test</SelectItem>
+                <SelectItem value="BASIC">Basic</SelectItem>
+                <SelectItem value="PRO">Pro</SelectItem>
                 <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
               </SelectContent>
             </Select>
