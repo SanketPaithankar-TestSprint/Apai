@@ -235,13 +235,21 @@ function CreateTestAccountModal({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [businessName, setBusinessName] = useState("")
 
   const createMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch("/api/admin/users/test-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          ownerName: name,
+          phone,
+          businessName 
+        }),
       })
       if (!response.ok) throw new Error("Failed to create test account")
       return response.json()
@@ -252,6 +260,8 @@ function CreateTestAccountModal({
       setEmail("")
       setPassword("")
       setName("")
+      setPhone("")
+      setBusinessName("")
       onOpenChange(false)
     },
     onError: () => {
@@ -280,12 +290,30 @@ function CreateTestAccountModal({
             />
           </div>
           <div className="grid gap-2">
+            <label className="text-sm font-medium">Business Name</label>
+            <Input
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder="Test Business"
+              disabled={createMutation.isPending}
+            />
+          </div>
+          <div className="grid gap-2">
             <label className="text-sm font-medium">Email</label>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="test@example.com"
+              disabled={createMutation.isPending}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Phone Number</label>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="5551234567"
               disabled={createMutation.isPending}
             />
           </div>
@@ -311,7 +339,7 @@ function CreateTestAccountModal({
           </Button>
           <Button
             onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending || !email || !password || !name}
+            disabled={createMutation.isPending || !email || !password || !name || !phone || !businessName}
           >
             {createMutation.isPending ? (
               <>
