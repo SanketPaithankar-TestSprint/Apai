@@ -47,6 +47,8 @@ interface User {
   alternatePhone: string | null
   businessName: string | null
   isActive: boolean
+  isOnline: boolean
+  lastActivity: string | null
   subscriptionStatus: string | null
   subscriptionPlan: string | null
   subscriptionExpiryDate: string | null
@@ -454,6 +456,8 @@ export default function UsersPage() {
           alternatePhone: "9876543211",
           businessName: "Tech Solutions",
           isActive: true,
+          isOnline: true,
+          lastActivity: new Date().toISOString(),
           subscriptionStatus: "ACTIVE",
           subscriptionPlan: "Premium",
           subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
@@ -467,6 +471,8 @@ export default function UsersPage() {
           alternatePhone: "9876543221",
           businessName: "Creative Studio",
           isActive: true,
+          isOnline: false,
+          lastActivity: new Date(Date.now() - 3600000).toISOString(),
           subscriptionStatus: "ACTIVE",
           subscriptionPlan: "Basic",
           subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
@@ -480,6 +486,8 @@ export default function UsersPage() {
           alternatePhone: "9876543231",
           businessName: "Business Services",
           isActive: false,
+          isOnline: false,
+          lastActivity: "2025-12-01T10:00:00.000Z",
           subscriptionStatus: "INACTIVE",
           subscriptionPlan: "Standard",
           subscriptionExpiryDate: "2025-12-31T23:59:59.999Z",
@@ -525,6 +533,7 @@ export default function UsersPage() {
                 <th className="px-6 py-3 text-left text-sm font-medium">Email</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Phone</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Alternate Phone</th>
+                <th className="px-6 py-3 text-left text-sm font-medium">Activity</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Subscription Plan</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Subscription Status</th>
                 <th className="px-6 py-3 text-left text-sm font-medium">Expiry Date</th>
@@ -548,6 +557,26 @@ export default function UsersPage() {
                     <td className="px-6 py-3 text-sm text-muted-foreground">{user.email || "N/A"}</td>
                     <td className="px-6 py-3 text-sm text-muted-foreground">{user.phone || "N/A"}</td>
                     <td className="px-6 py-3 text-sm text-muted-foreground">{user.alternatePhone || "N/A"}</td>
+                    <td className="px-6 py-3 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${user.isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-gray-300"}`} />
+                          <span className={`text-xs font-medium ${user.isOnline ? "text-green-700" : "text-muted-foreground"}`}>
+                            {user.isOnline ? "Online" : "Offline"}
+                          </span>
+                        </div>
+                        {!user.isOnline && user.lastActivity && (
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            Last: {new Date(user.lastActivity).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-3 text-sm">{user.subscriptionPlan || "N/A"}</td>
                     <td className="px-6 py-3 text-sm">
                       <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
