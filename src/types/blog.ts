@@ -15,6 +15,7 @@ export interface Blog {
     updatedAt?: string;
     readTimeMinutes?: number;
     readCount?: number;
+    images?: { url: string; sequence: number }[];
 }
 
 export interface BlogListResponse {
@@ -35,6 +36,7 @@ export interface CreateBlogDto {
     metaTitle?: string;
     metaDescription?: string;
     slug: string;
+    images?: { url: string; sequence: number }[];
 }
 
 export interface UpdateBlogDto extends Partial<CreateBlogDto> { }

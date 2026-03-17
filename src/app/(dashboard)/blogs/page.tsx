@@ -162,7 +162,7 @@ export default function BlogsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/blogs/${blog.slug}`}>
+                            <Link href={`https://autopaneai.com/blogs/${blog.slug}`} target="_blank" rel="noopener noreferrer">
                               View
                             </Link>
                           </DropdownMenuItem>

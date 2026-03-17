@@ -6,6 +6,14 @@ import { Blog } from "@/types/blog";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 export default function EditBlogPage() {
     const params = useParams();
@@ -78,6 +86,29 @@ export default function EditBlogPage() {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/blogs">Blogs</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href={`/blogs/${blog.slug}`} className="max-w-[150px] truncate" title={blog.title}>
+                                {blog.title}
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Edit</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
             <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
             <div className="border rounded-lg p-6 bg-card">
                 <BlogForm initialData={blog} onSubmit={handleSubmit} isLoading={saving} />

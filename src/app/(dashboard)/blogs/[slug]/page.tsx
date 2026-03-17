@@ -8,6 +8,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface BlogDetail {
   id: number;
@@ -71,8 +79,17 @@ export default function BlogDetailPage() {
     const isValidCdnUrl = CDN_BASE_URL && CDN_BASE_URL.trim() && CDN_BASE_URL !== "undefined";
     
     if (isValidImagePath && isValidCdnUrl) {
+      if (imageUrlPath.startsWith('http')) return imageUrlPath;
+
+      let cleanValue = imageUrlPath;
+      if (cleanValue.startsWith('/api/v1/blogs/images/')) {
+        cleanValue = cleanValue.replace('/api/v1/blogs/images/', 'blogs/');
+      }
+      
+      const cleanCdn = (CDN_BASE_URL as string).endsWith('/') ? (CDN_BASE_URL as string).slice(0, -1) : (CDN_BASE_URL as string);
+      const fullUrl = `${cleanCdn}/${cleanValue.startsWith('/') ? cleanValue.slice(1) : cleanValue}`;
+      
       try {
-        const fullUrl = `${CDN_BASE_URL}${imageUrlPath}`;
         new URL(fullUrl);
         return fullUrl;
       } catch (e) {
@@ -114,10 +131,24 @@ export default function BlogDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <div className="mb-6">
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/blogs">Blogs</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="max-w-[150px] sm:max-w-[300px] truncate" title={blog.title}>
+                {blog.title}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       {/* Cover Image */}
@@ -200,8 +231,13 @@ export default function BlogDetailPage() {
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blogs
         </Button>
+        <Button asChild variant="outline">
+          <Link href={`/blogs/${blog.slug}/edit`}>Edit Blog</Link>
+        </Button>
         <Button asChild>
-          <Link href={`/blogs/${blog.id}/edit`}>Edit Blog</Link>
+          <a href={`https://autopaneai.com/blogs/${blog.slug}`} target="_blank" rel="noopener noreferrer">
+            View Public Blog
+          </a>
         </Button>
       </div>
     </div>

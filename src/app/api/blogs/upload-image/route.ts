@@ -25,16 +25,39 @@ export async function POST(request: NextRequest) {
             body: formData,
         });
 
+        const contentType = response.headers.get("content-type") ?? "";
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorBody = await response
+                .text()
+                .catch(() => "");
+            const errorData =
+                contentType.includes("application/json") && errorBody
+                    ? (() => {
+                          try {
+                              return JSON.parse(errorBody);
+                          } catch {
+                              return { raw: errorBody };
+                          }
+                      })()
+                    : errorBody
+                    ? { raw: errorBody }
+                    : {};
             return NextResponse.json(
                 { message: "Failed to upload image", details: errorData },
                 { status: response.status }
             );
         }
 
-        const data = await response.json();
-        return NextResponse.json(data, { status: 201 });
+        // Backend may return either JSON or plain text (e.g., an image URL/path).
+        if (contentType.includes("application/json")) {
+            const data = await response.json();
+            return NextResponse.json(data, { status: 201 });
+        }
+
+        const text = (await response.text()).trim();
+        // BlogService.uploadImage expects an object with a 'url' property
+        return NextResponse.json({ url: text }, { status: 201 });
     } catch (error) {
         console.error("Upload Image API error:", error);
         return NextResponse.json(

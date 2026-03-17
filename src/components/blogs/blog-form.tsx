@@ -16,12 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Blog, CreateBlogDto } from "@/types/blog";
 import { RichTextEditor } from "@/components/blogs/rich-text-editor";
 import { useState } from "react";
-import { Loader2, UploadCloud, X } from "lucide-react";
+import { Loader2, UploadCloud, X, Copy } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { CDN_BASE_URL } from "@/constants/api";
+import { BlogService } from "@/services/blog-service";
 
-/** Build an absolute URL for image preview. Handles blob URLs, full URLs, and relative CDN paths. */
 function buildPreviewUrl(value: string): string | null {
     if (!value || !value.trim()) return null;
     // Already a blob or data URL (newly selected file)
@@ -30,7 +30,16 @@ function buildPreviewUrl(value: string): string | null {
     try { new URL(value); return value; } catch { }
     // Relative CDN path — prepend CDN base
     if (CDN_BASE_URL && CDN_BASE_URL !== "undefined") {
-        try { const full = `${CDN_BASE_URL}${value}`; new URL(full); return full; } catch { }
+        let cleanValue = value;
+        // Map backend path to Cloudfront S3 key
+        if (cleanValue.startsWith('/api/v1/blogs/images/')) {
+            cleanValue = cleanValue.replace('/api/v1/blogs/images/', 'blogs/');
+        }
+        
+        const cleanCdn = CDN_BASE_URL.endsWith('/') ? CDN_BASE_URL.slice(0, -1) : CDN_BASE_URL;
+        const fullUrl = `${cleanCdn}/${cleanValue.startsWith('/') ? cleanValue.slice(1) : cleanValue}`;
+        
+        try { new URL(fullUrl); return fullUrl; } catch { }
     }
     return null;
 }
@@ -57,6 +66,11 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+    const [uploadingAsset, setUploadingAsset] = useState(false);
+    const [assets, setAssets] = useState<{name: string, url: string}[]>([]);
+    const [showAssetDropzone, setShowAssetDropzone] = useState(false);
+    const [assetDragActive, setAssetDragActive] = useState(false);
+    const [assetCounter, setAssetCounter] = useState(1);
 
     const form = useForm<BlogFormValues>({
         resolver: zodResolver(blogSchema),
@@ -69,6 +83,35 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
             metaTitle: initialData?.metaTitle || "",
             metaDescription: initialData?.metaDescription || "",
         },
+    });
+
+    // Populate assets from initialData when editing
+    useState(() => {
+        if (initialData?.images && Array.isArray(initialData.images)) {
+            const mappedAssets = initialData.images.map((img: any) => {
+                const rawName = img.url.split('/').pop() || 'Existing Asset';
+                // Remove UUID prefix if backend/S3 added it (e.g., 82611bd8-..._slug-asset1.png -> slug-asset1.png)
+                const nameParts = rawName.split('_');
+                const displayName = nameParts.length > 1 ? nameParts.slice(1).join('_') : rawName;
+                
+                return {
+                    name: displayName,
+                    url: img.url
+                };
+            });
+            setAssets(mappedAssets);
+            
+            // Try to figure out the next asset counter based on existing names like "slug-asset2.jpg"
+            let maxCounter = 0;
+            mappedAssets.forEach(asset => {
+                const match = asset.name.match(/-asset(\d+)\./);
+                if (match && match[1]) {
+                    const num = parseInt(match[1]);
+                    if (num > maxCounter) maxCounter = num;
+                }
+            });
+            setAssetCounter(maxCounter + 1);
+        }
     });
 
     const processFile = async (file: File) => {
@@ -120,6 +163,66 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
         }
     };
 
+    const handleAssetDropName = async (files: FileList | File[]) => {
+        if (!files || files.length === 0) return;
+
+        const slug = form.getValues("slug");
+        if (!slug) {
+            toast.error("Please enter a slug first before uploading assets");
+            return;
+        }
+
+        setUploadingAsset(true);
+        let currentCounter = assetCounter;
+        let newAssets = [];
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const extension = file.name.split('.').pop() || 'jpg';
+                const newName = `${slug}-asset${currentCounter}.${extension}`;
+                const renamedFile = new File([file], newName, { type: file.type });
+
+                const result = await BlogService.uploadImage(renamedFile);
+                newAssets.push({ name: newName, url: result.url });
+                currentCounter++;
+            }
+            setAssets(prev => [...prev, ...newAssets]);
+            setAssetCounter(currentCounter);
+            toast.success("Asset(s) uploaded successfully");
+            setShowAssetDropzone(false);
+        } catch (error) {
+            toast.error("Failed to upload some asset(s)");
+        } finally {
+            setUploadingAsset(false);
+        }
+    };
+
+    const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            await handleAssetDropName(Array.from(e.target.files));
+            e.target.value = '';
+        }
+    };
+
+    const handleAssetDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setAssetDragActive(true);
+        } else if (e.type === "dragleave") {
+            setAssetDragActive(false);
+        }
+    };
+
+    const handleAssetDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setAssetDragActive(false);
+        if (e.dataTransfer.files) {
+            await handleAssetDropName(Array.from(e.dataTransfer.files));
+        }
+    };
+
     const handleFormSubmit = async (formData: BlogFormValues) => {
         // Validate required fields
         if (!formData.title || !formData.slug || !formData.content) {
@@ -130,6 +233,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
         const submitData = {
             ...formData,
             coverImageFile: selectedImageFile || undefined,
+            images: assets.map((a, idx) => ({ url: a.url, sequence: idx + 1 }))
         };
 
         console.log("Form submission data:", {
@@ -142,6 +246,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
             hasCoverImageFile: !!submitData.coverImageFile,
             coverImageFileSize: submitData.coverImageFile?.size,
             coverImageFileName: submitData.coverImageFile?.name,
+            imagesCount: submitData.images.length
         });
 
         onSubmit(submitData);
@@ -314,6 +419,98 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                         </FormItem>
                     )}
                 />
+
+                <div className="space-y-4 border p-4 rounded-md">
+                    <div>
+                        <FormLabel>Blog Assets (Optional)</FormLabel>
+                        <p className="text-sm text-muted-foreground mb-4">Upload assets like images for your blog content. A link will be generated to easily copy and paste into the editor.</p>
+                        <div className="flex items-center gap-4">
+                            <Button
+                                type="button"
+                                variant={showAssetDropzone ? "secondary" : "outline"}
+                                onClick={() => setShowAssetDropzone(!showAssetDropzone)}
+                                disabled={uploadingAsset}
+                            >
+                                {showAssetDropzone ? <X className="mr-2 h-4 w-4" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+                                {showAssetDropzone ? "Cancel" : "Add Asset"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {showAssetDropzone && (
+                        <div className="flex flex-col gap-4">
+                            <div
+                                className={`border-2 border-dashed rounded-lg p-8 transition-colors ${assetDragActive
+                                    ? "border-primary bg-primary/5"
+                                    : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                                    }`}
+                                onDragEnter={handleAssetDrag}
+                                onDragLeave={handleAssetDrag}
+                                onDragOver={handleAssetDrag}
+                                onDrop={handleAssetDrop}
+                            >
+                                <div className="flex flex-col items-center justify-center gap-3">
+                                    {uploadingAsset ? (
+                                        <>
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            <p className="text-sm text-muted-foreground">Uploading asset(s)...</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium">Drag and drop asset here</p>
+                                                <p className="text-xs text-muted-foreground">or</p>
+                                                <Button
+                                                    type="button"
+                                                    variant="link"
+                                                    className="h-auto p-0"
+                                                    onClick={() => document.getElementById("asset-upload")?.click()}
+                                                >
+                                                    click to select
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <input
+                                id="asset-upload"
+                                type="file"
+                                className="hidden"
+                                onChange={handleAssetUpload}
+                                multiple
+                                disabled={uploadingAsset}
+                            />
+                        </div>
+                    )}
+                    
+                    {assets.length > 0 && (
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {assets.map((asset, idx) => (
+                                <div key={idx} className="flex flex-col gap-1 text-sm border p-3 rounded-md bg-muted/20 relative">
+                                    <span className="font-medium text-xs break-all truncate" title={asset.name}>{asset.name}</span>
+                                    <div className="flex items-center justify-between border bg-background rounded px-2 py-1 mt-1">
+                                        <span className="text-muted-foreground truncate text-xs mr-2">{asset.url}</span>
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-6 w-6 p-0 shrink-0"
+                                            onClick={() => {
+                                                const fullUrl = buildPreviewUrl(asset.url) || asset.url;
+                                                navigator.clipboard.writeText(fullUrl);
+                                                toast.success("Link copied to clipboard");
+                                            }}
+                                        >
+                                            <Copy className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <FormField
                     control={form.control}

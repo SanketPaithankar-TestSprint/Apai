@@ -524,49 +524,51 @@ export default function UsersPage() {
       )}
 
       {!isLoading && (
-        <div className="border border-border rounded-none overflow-x-auto">
-          <table className="w-full">
+        <div className="border border-border rounded-none overflow-x-auto shadow-sm">
+          <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="px-6 py-3 text-left text-sm font-medium">Business Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Owner Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Email</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Phone</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Alternate Phone</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Activity</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Subscription Plan</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Subscription Status</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Expiry Date</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Created At</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
-                <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Business Name</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Owner Name</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Email</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Phone</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Alt Phone</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Activity</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Plan</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Sub Status</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Expiry</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Created At</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Active</th>
+                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
               {displayUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={12} className="px-3 py-6 text-center text-muted-foreground">
                     No users found
                   </td>
                 </tr>
               ) : (
                 displayUsers.map((user: User) => (
-                  <tr key={user.userId} className="border-b border-border hover:bg-muted/50">
-                    <td className="px-6 py-3 text-sm font-medium">{user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}</td>
-                    <td className="px-6 py-3 text-sm">{user.ownerName || "N/A"}</td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.email || "N/A"}</td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.phone || "N/A"}</td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">{user.alternatePhone || "N/A"}</td>
-                    <td className="px-6 py-3 text-sm">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${user.isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-gray-300"}`} />
-                          <span className={`text-xs font-medium ${user.isOnline ? "text-green-700" : "text-muted-foreground"}`}>
+                  <tr key={user.userId} className="border-b border-border hover:bg-muted/50 transition-colors">
+                    <td className="px-3 py-2 font-medium truncate max-w-[150px]" title={user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}>
+                      {user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
+                    </td>
+                    <td className="px-3 py-2 truncate max-w-[120px]" title={user.ownerName || "N/A"}>{user.ownerName || "N/A"}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[150px]" title={user.email || "N/A"}>{user.email || "N/A"}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">{user.phone || "N/A"}</td>
+                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">{user.alternatePhone || "N/A"}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${user.isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-gray-300"}`} />
+                          <span className={`font-medium ${user.isOnline ? "text-green-700" : "text-muted-foreground"}`}>
                             {user.isOnline ? "Online" : "Offline"}
                           </span>
                         </div>
                         {!user.isOnline && user.lastActivity && (
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          <span className="text-[9px] text-muted-foreground">
                             Last: {new Date(user.lastActivity).toLocaleString([], {
                               month: 'short',
                               day: 'numeric',
@@ -577,29 +579,29 @@ export default function UsersPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-3 text-sm">{user.subscriptionPlan || "N/A"}</td>
-                    <td className="px-6 py-3 text-sm">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
+                    <td className="px-3 py-2 whitespace-nowrap">{user.subscriptionPlan || "N/A"}</td>
+                    <td className="px-3 py-2">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
                         }`}>
                         {user.subscriptionStatus || "N/A"}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">
+                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                       {user.subscriptionExpiryDate ? new Date(user.subscriptionExpiryDate).toLocaleDateString() : "N/A"}
                     </td>
-                    <td className="px-6 py-3 text-sm text-muted-foreground">
+                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                     </td>
-                    <td className="px-6 py-3 text-sm">
+                    <td className="px-3 py-2">
                       {togglingUserId === user.userId ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs text-muted-foreground">Updating...</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                          <span className="text-[10px] text-muted-foreground">...</span>
                         </div>
                       ) : (
-                        <span className={`px-2 py-1 text-xs font-medium rounded-none whitespace-nowrap ${user.isActive
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${user.isActive
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
                           }`}>
@@ -607,7 +609,7 @@ export default function UsersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-sm">
+                    <td className="px-3 py-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">

@@ -29,6 +29,7 @@ export const BlogService = {
             metaDescription: data.metaDescription || null,
             // Don't send coverImageUrl if we have the actual file - only send if no file
             coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
+            images: data.images || [],
         };
 
         console.log("Blog data to send:", JSON.stringify(blogData, null, 2));
@@ -84,6 +85,7 @@ export const BlogService = {
             metaTitle: data.metaTitle || null,
             metaDescription: data.metaDescription || null,
             coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
+            images: data.images || [],
         };
 
         formData.append("data", JSON.stringify(blogData));

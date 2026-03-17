@@ -5,6 +5,14 @@ import { BlogService } from "@/services/blog-service";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 export default function CreateBlogPage() {
     const router = useRouter();
@@ -30,7 +38,24 @@ export default function CreateBlogPage() {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">Create New Blog</h1>
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/blogs">Blogs</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Create New</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
+            <h1 className="text-3xl font-bold mb-6">Create New Blog</h1>
             <div className="border rounded-lg p-6 bg-card">
                 <BlogForm onSubmit={handleSubmit} isLoading={loading} />
             </div>
