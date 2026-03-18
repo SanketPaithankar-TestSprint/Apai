@@ -18,7 +18,7 @@ jobs:
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
                 title: '🚀 [ADMIN PANEL] Deployment Started'
-                description: 'A new commit was pushed to main. Starting build process...'
+                description: 'A new commit was pushed to test. Starting build process...\n🚀 **Url**: https://admin.autopaneai.com'
                 color: 0x3498db # Blue
 
             - name: Setup Node.js
@@ -50,7 +50,7 @@ jobs:
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
                 title: '📦 [ADMIN PANEL] Build Successful'
-                description: 'Vite/React application compiled successfully. Proceeding to AWS deployment.'
+                description: 'Vite/React application compiled successfully. Proceeding to AWS deployment.\n🚀 **Url**: https://admin.autopaneai.com'
                 color: 0xf1c40f # Yellow
                 
             - name: ❌ Notify Build Failed
@@ -59,7 +59,7 @@ jobs:
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
                 title: '❌ [ADMIN PANEL] Build Failed'
-                description: 'Vite/React application failed to compile. Deployment aborted.'
+                description: 'Vite/React application failed to compile. Deployment aborted.\n🚀 **Url**: https://admin.autopaneai.com'
                 color: 0xe74c3c # Red
 
 
@@ -99,4 +99,4 @@ jobs:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
                 status: ${{ job.status }}
                 title: '[ADMIN PANEL] Deployment Status'
-                description: 'The CI/CD pipeline has finished.'
+                description: 'The CI/CD pipeline has finished.\n🚀 **Url**: https://admin.autopaneai.com'
