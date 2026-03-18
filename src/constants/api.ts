@@ -1,5 +1,5 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_JAVA_BACKEND_URL;
-export const CDN_BASE_URL = process.env.NEXT_PUBLIC_CDN_BASE_URL;
+export const API_BASE_URL = import.meta.env.VITE_JAVA_BACKEND_URL as string | undefined;
+export const CDN_BASE_URL = import.meta.env.VITE_CDN_BASE_URL as string | undefined;
 export const API_ENDPOINTS = {
   ANALYTICS: `${API_BASE_URL}analytics`,
   USERS: `${API_BASE_URL}users`,

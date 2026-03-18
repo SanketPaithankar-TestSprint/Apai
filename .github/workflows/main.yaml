@@ -1,4 +1,4 @@
-name: Next.js CI
+name: Vite React CI
 on:
     push:
         branches: [test]
@@ -17,7 +17,7 @@ jobs:
               if: always()
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
-                title: '🚀 Deployment Pipeline Started'
+                title: '🚀 [ADMIN PANEL] Deployment Started'
                 description: 'A new commit was pushed to main. Starting build process...'
                 color: 0x3498db # Blue
 
@@ -41,16 +41,16 @@ jobs:
             - name: Upload Static Build Artifact
               uses: actions/upload-artifact@v4
               with:
-                name: nextjs-static-build
-                path: ./out
+                name: vite-static-build
+                path: ./dist
                 
             - name: 📦 Notify Build Success
               uses: sarisia/actions-status-discord@v1
               if: success()
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
-                title: '📦 Build Successful'
-                description: 'Next.js application compiled successfully. Proceeding to AWS deployment.'
+                title: '📦 [ADMIN PANEL] Build Successful'
+                description: 'Vite/React application compiled successfully. Proceeding to AWS deployment.'
                 color: 0xf1c40f # Yellow
                 
             - name: ❌ Notify Build Failed
@@ -58,8 +58,8 @@ jobs:
               if: failure()
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
-                title: '❌ Build Failed'
-                description: 'Next.js application failed to compile. Deployment aborted.'
+                title: '❌ [ADMIN PANEL] Build Failed'
+                description: 'Vite/React application failed to compile. Deployment aborted.'
                 color: 0xe74c3c # Red
 
 
@@ -72,8 +72,8 @@ jobs:
             - name: Download Static Build Artifact
               uses: actions/download-artifact@v4
               with:
-                name: nextjs-static-build
-                path: ./out
+                name: vite-static-build
+                path: ./dist
                 
             # ☁️ AWS Deployment Phase
             - name: Configure AWS Credentials
@@ -85,7 +85,7 @@ jobs:
                 
             - name: Deploy to S3 Bucket
               run: |
-                aws s3 sync ./out s3://${{ secrets.S3_BUCKET_NAME }} --delete
+                aws s3 sync ./dist s3://${{ secrets.S3_BUCKET_NAME }} --delete
                 
             - name: Invalidate CloudFront Cache
               run: |
@@ -98,5 +98,5 @@ jobs:
               with:
                 webhook: ${{ secrets.DISCORD_WEBHOOK }}
                 status: ${{ job.status }}
-                title: 'APAI-ADMIN Deployment Status'
+                title: '[ADMIN PANEL] Deployment Status'
                 description: 'The CI/CD pipeline has finished.'

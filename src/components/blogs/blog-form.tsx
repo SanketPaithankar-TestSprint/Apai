@@ -17,9 +17,8 @@ import { Blog, CreateBlogDto } from "@/types/blog";
 import { RichTextEditor } from "@/components/blogs/rich-text-editor";
 import { useState } from "react";
 import { Loader2, UploadCloud, X, Copy } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
-import { CDN_BASE_URL } from "@/constants/api";
+import { CDN_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { BlogService } from "@/services/blog-service";
 
 function buildPreviewUrl(value: string): string | null {
@@ -66,8 +65,10 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-    const [uploadingAsset, setUploadingAsset] = useState(false);
-    const [assets, setAssets] = useState<{name: string, url: string}[]>([]);
+    // Pending assets: files not yet uploaded (local blob previews)
+    const [pendingAssets, setPendingAssets] = useState<{name: string, file: File, previewUrl: string}[]>([]);
+    // Saved assets: already uploaded to server (have real URLs)
+    const [savedAssets, setSavedAssets] = useState<{name: string, url: string}[]>([]);
     const [showAssetDropzone, setShowAssetDropzone] = useState(false);
     const [assetDragActive, setAssetDragActive] = useState(false);
     const [assetCounter, setAssetCounter] = useState(1);
@@ -85,23 +86,17 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
         },
     });
 
-    // Populate assets from initialData when editing
+    // Populate saved assets from initialData when editing
     useState(() => {
         if (initialData?.images && Array.isArray(initialData.images)) {
             const mappedAssets = initialData.images.map((img: any) => {
                 const rawName = img.url.split('/').pop() || 'Existing Asset';
-                // Remove UUID prefix if backend/S3 added it (e.g., 82611bd8-..._slug-asset1.png -> slug-asset1.png)
                 const nameParts = rawName.split('_');
                 const displayName = nameParts.length > 1 ? nameParts.slice(1).join('_') : rawName;
-                
-                return {
-                    name: displayName,
-                    url: img.url
-                };
+                return { name: displayName, url: img.url };
             });
-            setAssets(mappedAssets);
-            
-            // Try to figure out the next asset counter based on existing names like "slug-asset2.jpg"
+            setSavedAssets(mappedAssets);
+
             let maxCounter = 0;
             mappedAssets.forEach(asset => {
                 const match = asset.name.match(/-asset(\d+)\./);
@@ -163,7 +158,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
         }
     };
 
-    const handleAssetDropName = async (files: FileList | File[]) => {
+    const handleAssetDropName = (files: FileList | File[]) => {
         if (!files || files.length === 0) return;
 
         const slug = form.getValues("slug");
@@ -172,34 +167,28 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
             return;
         }
 
-        setUploadingAsset(true);
         let currentCounter = assetCounter;
-        let newAssets = [];
-        try {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const extension = file.name.split('.').pop() || 'jpg';
-                const newName = `${slug}-asset${currentCounter}.${extension}`;
-                const renamedFile = new File([file], newName, { type: file.type });
+        const newPending: {name: string, file: File, previewUrl: string}[] = [];
 
-                const result = await BlogService.uploadImage(renamedFile);
-                newAssets.push({ name: newName, url: result.url });
-                currentCounter++;
-            }
-            setAssets(prev => [...prev, ...newAssets]);
-            setAssetCounter(currentCounter);
-            toast.success("Asset(s) uploaded successfully");
-            setShowAssetDropzone(false);
-        } catch (error) {
-            toast.error("Failed to upload some asset(s)");
-        } finally {
-            setUploadingAsset(false);
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const extension = file.name.split('.').pop() || 'jpg';
+            const newName = `${slug}-asset${currentCounter}.${extension}`;
+            const renamedFile = new File([file], newName, { type: file.type });
+            const previewUrl = URL.createObjectURL(file);
+            newPending.push({ name: newName, file: renamedFile, previewUrl });
+            currentCounter++;
         }
+
+        setPendingAssets(prev => [...prev, ...newPending]);
+        setAssetCounter(currentCounter);
+        toast.success(`${newPending.length} asset(s) queued — will upload when you save the blog`);
+        setShowAssetDropzone(false);
     };
 
-    const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAssetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            await handleAssetDropName(Array.from(e.target.files));
+            handleAssetDropName(Array.from(e.target.files));
             e.target.value = '';
         }
     };
@@ -230,24 +219,33 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
             return;
         }
 
+        // Upload all pending assets to server first
+        const uploadedUrls: {url: string, sequence: number}[] = [];
+
+        // Add existing saved assets first
+        savedAssets.forEach((a, idx) => {
+            uploadedUrls.push({ url: a.url, sequence: idx + 1 });
+        });
+
+        // Upload pending (new) assets
+        if (pendingAssets.length > 0) {
+            toast.info(`Uploading ${pendingAssets.length} asset(s)...`);
+            for (const asset of pendingAssets) {
+                try {
+                    const result = await BlogService.uploadImage(asset.file);
+                    uploadedUrls.push({ url: result.url, sequence: uploadedUrls.length + 1 });
+                } catch (error) {
+                    toast.error(`Failed to upload ${asset.name}`);
+                    return; // Stop submission if asset upload fails
+                }
+            }
+        }
+
         const submitData = {
             ...formData,
             coverImageFile: selectedImageFile || undefined,
-            images: assets.map((a, idx) => ({ url: a.url, sequence: idx + 1 }))
+            images: uploadedUrls,
         };
-
-        console.log("Form submission data:", {
-            title: submitData.title,
-            slug: submitData.slug,
-            contentLength: submitData.content?.length,
-            excerpt: submitData.excerpt,
-            metaTitle: submitData.metaTitle,
-            metaDescription: submitData.metaDescription,
-            hasCoverImageFile: !!submitData.coverImageFile,
-            coverImageFileSize: submitData.coverImageFile?.size,
-            coverImageFileName: submitData.coverImageFile?.name,
-            imagesCount: submitData.images.length
-        });
 
         onSubmit(submitData);
     };
@@ -393,7 +391,7 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                                         const previewUrl = buildPreviewUrl(field.value || "");
                                         return previewUrl ? (
                                             <div className="relative h-48 w-full md:w-1/2 rounded-md overflow-hidden border">
-                                                <Image src={previewUrl} alt="Cover" fill className="object-cover" />
+                                                <img src={previewUrl} alt="Cover" className="w-full h-full object-cover" />
                                                 <button
                                                     type="button"
                                                     onClick={() => form.setValue("coverImageUrl", "")}
@@ -429,7 +427,6 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                                 type="button"
                                 variant={showAssetDropzone ? "secondary" : "outline"}
                                 onClick={() => setShowAssetDropzone(!showAssetDropzone)}
-                                disabled={uploadingAsset}
                             >
                                 {showAssetDropzone ? <X className="mr-2 h-4 w-4" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                                 {showAssetDropzone ? "Cancel" : "Add Asset"}
@@ -450,28 +447,19 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                                 onDrop={handleAssetDrop}
                             >
                                 <div className="flex flex-col items-center justify-center gap-3">
-                                    {uploadingAsset ? (
-                                        <>
-                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                            <p className="text-sm text-muted-foreground">Uploading asset(s)...</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                                            <div className="text-center">
-                                                <p className="text-sm font-medium">Drag and drop asset here</p>
-                                                <p className="text-xs text-muted-foreground">or</p>
-                                                <Button
-                                                    type="button"
-                                                    variant="link"
-                                                    className="h-auto p-0"
-                                                    onClick={() => document.getElementById("asset-upload")?.click()}
-                                                >
-                                                    click to select
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
+                                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium">Drag and drop asset here</p>
+                                        <p className="text-xs text-muted-foreground">or</p>
+                                        <Button
+                                            type="button"
+                                            variant="link"
+                                            className="h-auto p-0"
+                                            onClick={() => document.getElementById("asset-upload")?.click()}
+                                        >
+                                            click to select
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                             <input
@@ -480,32 +468,63 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                                 className="hidden"
                                 onChange={handleAssetUpload}
                                 multiple
-                                disabled={uploadingAsset}
+                                accept="image/*"
                             />
                         </div>
                     )}
                     
-                    {assets.length > 0 && (
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {assets.map((asset, idx) => (
-                                <div key={idx} className="flex flex-col gap-1 text-sm border p-3 rounded-md bg-muted/20 relative">
-                                    <span className="font-medium text-xs break-all truncate" title={asset.name}>{asset.name}</span>
-                                    <div className="flex items-center justify-between border bg-background rounded px-2 py-1 mt-1">
-                                        <span className="text-muted-foreground truncate text-xs mr-2">{asset.url}</span>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="h-6 w-6 p-0 shrink-0"
-                                            onClick={() => {
-                                                const fullUrl = buildPreviewUrl(asset.url) || asset.url;
-                                                navigator.clipboard.writeText(fullUrl);
-                                                toast.success("Link copied to clipboard");
-                                            }}
-                                        >
-                                            <Copy className="h-3 w-3" />
+                    {/* Saved Assets (already on server) */}
+                    {savedAssets.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                            <p className="text-xs font-medium text-muted-foreground">Saved Assets ({savedAssets.length})</p>
+                            {savedAssets.map((asset, idx) => {
+                                const fullUrl = buildPreviewUrl(asset.url) || asset.url;
+                                return (
+                                    <div key={`saved-${idx}`} className="flex items-center gap-3 border rounded-md p-2 bg-muted/20">
+                                        <div className="w-16 h-16 rounded overflow-hidden bg-muted flex-shrink-0 border">
+                                            <img src={fullUrl} alt={asset.name} className="w-full h-full object-cover"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-medium truncate" title={asset.name}>{asset.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate mt-0.5" title={fullUrl}>{fullUrl}</p>
+                                        </div>
+                                        <Button type="button" variant="outline" size="sm" className="shrink-0"
+                                            onClick={() => { navigator.clipboard.writeText(fullUrl); toast.success("Link copied!"); }}>
+                                            <Copy className="h-3 w-3 mr-1" /> Copy
+                                        </Button>
+                                        <Button type="button" variant="ghost" size="sm"
+                                            className="shrink-0 text-destructive hover:text-destructive h-8 w-8 p-0"
+                                            onClick={() => setSavedAssets(prev => prev.filter((_, i) => i !== idx))}>
+                                            <X className="h-4 w-4" />
                                         </Button>
                                     </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Pending Assets (queued, not yet uploaded) */}
+                    {pendingAssets.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                            <p className="text-xs font-medium text-amber-500">Pending Assets ({pendingAssets.length}) — will upload on save</p>
+                            {pendingAssets.map((asset, idx) => (
+                                <div key={`pending-${idx}`} className="flex items-center gap-3 border border-amber-500/30 rounded-md p-2 bg-amber-500/5">
+                                    <div className="w-16 h-16 rounded overflow-hidden bg-muted flex-shrink-0 border">
+                                        <img src={asset.previewUrl} alt={asset.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium truncate" title={asset.name}>{asset.name}</p>
+                                        <p className="text-xs text-amber-500 mt-0.5">Pending upload</p>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="sm"
+                                        className="shrink-0 text-destructive hover:text-destructive h-8 w-8 p-0"
+                                        onClick={() => {
+                                            URL.revokeObjectURL(asset.previewUrl);
+                                            setPendingAssets(prev => prev.filter((_, i) => i !== idx));
+                                        }}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
                                 </div>
                             ))}
                         </div>
