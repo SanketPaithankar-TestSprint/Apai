@@ -1,0 +1,102 @@
+name: Next.js CI
+on:
+    push:
+        branches: [test]
+
+jobs:
+    build:
+        name: Build Application
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+              
+            # 🚀 Start Notification
+            - name: 🚀 Notify Started
+              uses: sarisia/actions-status-discord@v1
+              if: always()
+              with:
+                webhook: ${{ secrets.DISCORD_WEBHOOK }}
+                title: '🚀 Deployment Pipeline Started'
+                description: 'A new commit was pushed to main. Starting build process...'
+                color: 0x3498db # Blue
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                node-version: 20
+                cache: 'npm'
+                
+            - name: Install Dependencies
+              run: npm install
+              
+            # 📦 Build Phase
+            - name: Build App
+              run: npm run build
+              env:
+                NEXT_PUBLIC_CDN_BASE_URL: ${{ secrets.NEXT_PUBLIC_CDN_BASE_URL }}
+                NEXT_PUBLIC_JAVA_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_JAVA_BACKEND_URL }}
+                
+            # 📤 Upload Artifacts for Deployment Job
+            - name: Upload Static Build Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: nextjs-static-build
+                path: ./out
+                
+            - name: 📦 Notify Build Success
+              uses: sarisia/actions-status-discord@v1
+              if: success()
+              with:
+                webhook: ${{ secrets.DISCORD_WEBHOOK }}
+                title: '📦 Build Successful'
+                description: 'Next.js application compiled successfully. Proceeding to AWS deployment.'
+                color: 0xf1c40f # Yellow
+                
+            - name: ❌ Notify Build Failed
+              uses: sarisia/actions-status-discord@v1
+              if: failure()
+              with:
+                webhook: ${{ secrets.DISCORD_WEBHOOK }}
+                title: '❌ Build Failed'
+                description: 'Next.js application failed to compile. Deployment aborted.'
+                color: 0xe74c3c # Red
+
+
+    deploy:
+        name: Deploy to Cloud
+        runs-on: ubuntu-latest
+        needs: build # Wait for the 'build' job to succeed before running
+        steps:
+            # 📥 Download Artifacts from Build Job
+            - name: Download Static Build Artifact
+              uses: actions/download-artifact@v4
+              with:
+                name: nextjs-static-build
+                path: ./out
+                
+            # ☁️ AWS Deployment Phase
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: us-east-1
+                
+            - name: Deploy to S3 Bucket
+              run: |
+                aws s3 sync ./out s3://${{ secrets.S3_BUCKET_NAME }} --delete
+                
+            - name: Invalidate CloudFront Cache
+              run: |
+                aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+                
+            # ✅/❌ Final Result Notification
+            - name: Final Discord Notification
+              uses: sarisia/actions-status-discord@v1
+              if: always()
+              with:
+                webhook: ${{ secrets.DISCORD_WEBHOOK }}
+                status: ${{ job.status }}
+                title: 'APAI-ADMIN Deployment Status'
+                description: 'The CI/CD pipeline has finished.'
