@@ -1,7 +1,7 @@
 export const API_BASE_URL = import.meta.env.VITE_JAVA_BACKEND_URL as string | undefined;
 export const CDN_BASE_URL = import.meta.env.VITE_CDN_BASE_URL as string | undefined;
 export const API_ENDPOINTS = {
-  ANALYTICS: `${API_BASE_URL}analytics`,
+  ANALYTICS: `${API_BASE_URL}admin/analytics`,
   USERS: `${API_BASE_URL}users`,
   BLOGS: `${API_BASE_URL}v1/blogs`,
   BLOG_UPLOAD_IMAGE: `${API_BASE_URL}v1/blogs/upload-image`,

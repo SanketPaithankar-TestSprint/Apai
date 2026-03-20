@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { MoreVertical, Plus, FileText, Loader2 } from "lucide-react"
+import { MoreVertical, Plus, FileText, Loader2, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import {
   DropdownMenu,
@@ -356,6 +356,7 @@ function CreateTestAccountModal({
 export function UsersPage() {
   const queryClient = useQueryClient()
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const [editUser, setEditUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
@@ -438,9 +439,20 @@ export function UsersPage() {
     window.open(url, "_blank")
   }
 
+  // Filter both live and mock users
+  const filterUser = (user: any) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      user.ownerName?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.userId?.toString().includes(query) ||
+      user.businessName?.toLowerCase().includes(query)
+    )
+  }
+
   const displayUsers =
     users.length > 0
-      ? users
+      ? users.filter(filterUser)
       : [
           {
             userId: 1,
@@ -487,19 +499,38 @@ export function UsersPage() {
             subscriptionExpiryDate: "2025-12-31T23:59:59.999Z",
             createdAt: "2024-12-01T10:00:00.000Z",
           },
-        ]
+        ].filter(filterUser)
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-bold mb-2">Users</h1>
           <p className="text-muted-foreground">Manage all users in your system</p>
         </div>
-        <Button onClick={() => setShowCreateTest(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Generate Test User
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name, email, id..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 w-[300px]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <Button onClick={() => setShowCreateTest(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Generate Test User
+          </Button>
+        </div>
       </div>
 
       {isLoading && (

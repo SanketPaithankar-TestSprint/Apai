@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 // Lazy-loaded pages (only downloaded when user navigates to them)
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/auth/RegisterPage"));
-const DashboardPage = lazy(() => import("@/pages/dashboard/DashboardPage"));
+const AnalyticsPage = lazy(() => import("@/pages/dashboard/AnalyticsPage/AnalyticsPage"));
 const BlogsPage = lazy(() => import("@/pages/dashboard/blogs/BlogsPage"));
 const BlogNewPage = lazy(() => import("@/pages/dashboard/blogs/BlogNewPage"));
 const BlogEditPage = lazy(() => import("@/pages/dashboard/blogs/BlogEditPage"));
@@ -29,7 +29,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route element={<DashboardLayout />}>
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<AnalyticsPage />} />
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/blogs/new" element={<BlogNewPage />} />
           <Route path="/blogs/edit" element={<BlogEditPage />} />
