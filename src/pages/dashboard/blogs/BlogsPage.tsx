@@ -8,8 +8,9 @@ import { BlogService } from "@/services/blog-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Loader2, MoreVertical } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/EmptyState";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function BlogsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -78,34 +80,34 @@ export function BlogsPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Blogs</h1>
-          <p className="text-muted-foreground">Manage your blog posts</p>
+    <div className="p-4 space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-1 border-b-2 border-black mb-4">
+        <div className="flex-1 flex items-center gap-4">
+          <h1 className="text-lg font-bold tracking-tight shrink-0">Blogs</h1>
+          
+          <div className="relative w-full max-w-[300px]">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search blogs..."
+              className="pl-8 rounded-none border-2 h-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link to="/blogs/new">
-            <Plus className="mr-2 h-4 w-4" /> Create Blog
-          </Link>
-        </Button>
-      </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search blogs..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        {searchQuery && (
-          <Button variant="ghost" onClick={() => setSearchQuery("")}>
-            Clear Filters
+        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+          {searchQuery && (
+            <Button variant="ghost" onClick={() => setSearchQuery("")} size="sm" className="h-9">
+              Clear
+            </Button>
+          )}
+          <Button asChild className="w-full sm:w-auto h-9 rounded-none font-bold text-xs uppercase" size="sm">
+            <Link to="/blogs/new">
+              <Plus className="mr-2 h-4 w-4" /> Create blog
+            </Link>
           </Button>
-        )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -113,12 +115,29 @@ export function BlogsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : filteredBlogs.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
-          No blogs found.
+        <div className="border border-border rounded-none overflow-x-auto shadow-sm">
+          <table className="w-full text-xs">
+            <tbody>
+              <tr>
+                <td className="p-0">
+                  <EmptyState 
+                    title="No Blogs Found"
+                    description="You haven't created any blogs yet, or no blogs match your search query."
+                    className="border-none bg-transparent py-24"
+                    action={{
+                      label: "Create First Blog",
+                      onClick: () => navigate("/blogs/new"),
+                      icon: Plus
+                    }}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="border border-border rounded-none overflow-x-auto">
-          <table className="w-full">
+        <div className="border border-border rounded-none overflow-x-auto shadow-sm">
+          <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="px-6 py-3 text-left text-sm font-medium">Image</th>

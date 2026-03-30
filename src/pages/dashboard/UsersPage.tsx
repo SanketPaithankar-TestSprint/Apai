@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { MoreVertical, Plus, FileText, Loader2, Search, X } from "lucide-react"
 import { toast } from "sonner"
+import { EmptyState } from "@/components/EmptyState"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -503,19 +504,17 @@ export function UsersPage() {
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Users</h1>
-          <p className="text-muted-foreground">Manage all users in your system</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
+        <div className="flex items-center gap-4 flex-1">
+          <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
+          
+          <div className="relative w-full max-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search name, email, id..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 w-[300px]"
+              className="pl-9 pr-8 h-9 rounded-none border-2"
             />
             {searchQuery && (
               <button
@@ -526,7 +525,10 @@ export function UsersPage() {
               </button>
             )}
           </div>
-          <Button onClick={() => setShowCreateTest(true)}>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={() => setShowCreateTest(true)} size="sm" className="h-9 rounded-none font-bold text-xs uppercase">
             <Plus className="w-4 h-4 mr-2" />
             Generate Test User
           </Button>
@@ -570,8 +572,12 @@ export function UsersPage() {
             <tbody>
               {displayUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-3 py-6 text-center text-muted-foreground">
-                    No users found
+                  <td colSpan={12} className="p-0">
+                    <EmptyState 
+                      title="No Users Found"
+                      description="We couldn't find any users matching your current criteria or search query."
+                      className="border-none bg-transparent py-20"
+                    />
                   </td>
                 </tr>
               ) : (

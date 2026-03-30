@@ -52,3 +52,15 @@ export interface AnalyticsDashboardData {
   growthTimeSeries: GrowthDataPoint[];
   topContentByViews: TopContent[];
 }
+
+export interface TicketAnalytics {
+  [key: string]: any;
+}
+
+export interface CallAnalytics {
+  [key: string]: any;
+}
+
+export interface ArticleAnalytics {
+  [key: string]: any;
+}
