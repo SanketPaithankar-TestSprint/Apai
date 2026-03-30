@@ -115,10 +115,10 @@ export default function ArticleEditPage() {
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="icon" 
             onClick={() => navigate(-1)} 
-            className="rounded-xl hover:bg-muted shrink-0"
+            className="rounded-none hover:bg-muted shrink-0 border-2"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -141,7 +141,7 @@ export default function ArticleEditPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-3xl p-8 shadow-xl shadow-primary/5 transition-all hover:shadow-2xl hover:shadow-primary/5 border-t-4 border-t-primary">
+      <div className="bg-card border-2 border-border rounded-none p-8 shadow-sm">
         <ArticleForm
           initialData={article}
           categories={categories}

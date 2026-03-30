@@ -11,12 +11,13 @@ export interface ChatMessage {
 
 export interface Conversation {
   id: string;
+  userId?: number;
   visitorId: string;
   visitorName: string;
   lastMessage?: string;
   lastMessageTimestamp?: string;
   unreadCount: number;
-  status: "OPEN" | "CLOSED";
+  status: "OPEN" | "CLOSED" | "IN_PROGRESS";
 }
 
 export interface ChatWebSocketMessage {

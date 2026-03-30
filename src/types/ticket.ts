@@ -19,6 +19,7 @@ export interface TicketAttachment {
 
 export interface Ticket {
   id: string
+  userId: number
   subject: string
   category: TicketCategory
   priority: TicketPriority

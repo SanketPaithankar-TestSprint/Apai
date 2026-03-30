@@ -27,7 +27,7 @@ export const articleService = {
   },
 
   getArticle: async (id: string): Promise<HelpArticle> => {
-    const response = await fetchWithAuth(API_ENDPOINTS.ADMIN_ARTICLE(id))
+    const response = await fetchWithAuth(API_ENDPOINTS.SUPPORT_ARTICLE(id))
     if (!response.ok) throw new Error("Failed to fetch article details")
     return response.json()
   },

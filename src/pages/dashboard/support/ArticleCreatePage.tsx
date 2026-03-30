@@ -66,10 +66,10 @@ export default function ArticleCreatePage() {
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="icon" 
             onClick={() => navigate(-1)} 
-            className="rounded-full hover:bg-muted"
+            className="rounded-none hover:bg-muted border-2"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -83,7 +83,7 @@ export default function ArticleCreatePage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-3xl p-8 shadow-xl shadow-primary/5">
+      <div className="bg-card border-2 border-border rounded-none p-8 shadow-sm">
         <ArticleForm
           categories={categories}
           onSubmit={(data) => createMutation.mutate(data)}

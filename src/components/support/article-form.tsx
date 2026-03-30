@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -113,10 +113,10 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
                         control={form.control}
                         name="published"
                         render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                             <FormItem className="flex flex-row items-center justify-between rounded-none border-2 p-4 shadow-sm">
                                 <div className="space-y-0.5">
-                                    <FormLabel>Published</FormLabel>
-                                    <p className="text-xs text-muted-foreground">Make this article visible to users.</p>
+                                    <FormLabel className="text-xs font-black uppercase tracking-widest">Published</FormLabel>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Make this article visible to users.</p>
                                 </div>
                                 <FormControl>
                                     <Switch
@@ -134,11 +134,11 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Short Description</FormLabel>
+                            <FormLabel className="text-xs font-black uppercase tracking-widest">Short Description</FormLabel>
                             <FormControl>
                                 <Textarea 
                                     placeholder="Briefly describe what this article covers..." 
-                                    className="resize-none"
+                                    className="resize-none rounded-none border-2 h-20"
                                     {...field} 
                                     value={field.value as string}
                                 />
@@ -153,8 +153,8 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
                     name="content"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Article Content</FormLabel>
-                            <FormControl>
+                            <FormLabel className="text-xs font-black uppercase tracking-widest">Article Content</FormLabel>
+                            <FormControl className="rounded-none border-2">
                                 <RichTextEditor
                                     value={field.value as string}
                                     onChange={field.onChange}
@@ -162,12 +162,12 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
                                 />
                             </FormControl>
                             <FormMessage />
-                        </FormItem>
+                    </FormItem>
                     )}
                 />
 
-                <div className="flex justify-end gap-3">
-                    <Button type="submit" disabled={isLoading} className="w-full md:w-auto px-8">
+                <div className="flex justify-end gap-3 pt-4">
+                    <Button type="submit" disabled={isLoading} className="w-full md:w-auto px-10 h-10 rounded-none font-bold uppercase tracking-widest text-xs">
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {initialData ? "Update Article" : "Create Article"}
                     </Button>

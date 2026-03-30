@@ -95,99 +95,60 @@ export function HelpArticlesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-primary" />
-            Help Articles
-          </h2>
-          <p className="text-muted-foreground">Manage self-service support documents and guides.</p>
-        </div>
-        <div className="flex items-center gap-3">
-            <Button 
-                variant="outline" 
-                onClick={() => setIsCategoryManageOpen(true)}
-                className="rounded-xl border-dashed border-2 bg-muted/30 font-bold"
-            >
-                <Settings className="w-4 h-4 mr-2" />
-                Manage Categories
-            </Button>
-            <Button 
-                onClick={() => navigate("/support/articles/create")}
-                className="rounded-xl shadow-lg px-6 font-bold"
-            >
-                <Plus className="w-4 h-4 mr-2" />
-                New Article
-            </Button>
-        </div>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 py-1 mb-4">
+        <div className="flex-1 flex items-center gap-2">
+          <div className="relative w-full max-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search articles..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+              className="pl-9 h-9 rounded-none border-2"
+            />
+          </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 bg-muted/20 p-4 rounded-xl border border-border/50">
-        <div className="lg:col-span-4 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search articles..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
-            className="pl-10 h-11 bg-background rounded-lg border-2 border-border/10 focus-visible:border-primary/50"
-          />
-        </div>
-        
-        <div className="lg:col-span-2">
-            <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(0); }}>
-            <SelectTrigger className="h-11 bg-background border-2 border-border/10 rounded-lg">
-                <div className="flex items-center gap-2 overflow-hidden">
-                    <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <SelectValue placeholder="Category" />
-                </div>
+          <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(0); }}>
+            <SelectTrigger className="w-[140px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
+              <SelectValue placeholder="Category" />
             </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="ALL">All Categories</SelectItem>
-                {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
-                ))}
+            <SelectContent className="rounded-none">
+              <SelectItem value="ALL">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+              ))}
             </SelectContent>
-            </Select>
+          </Select>
+
+          <Select value={archivedFilter} onValueChange={(val) => { setArchivedFilter(val); setPage(0); }}>
+            <SelectTrigger className="w-[140px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="archived">Archived Only</SelectItem>
+              <SelectItem value="all">All (Incl. Archived)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="lg:col-span-2">
-            <Select value={archivedFilter} onValueChange={(val) => { setArchivedFilter(val); setPage(0); }}>
-                <SelectTrigger className="h-11 bg-background border-2 border-border/10 rounded-lg">
-                    <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <SelectValue placeholder="Status" />
-                    </div>
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="active">Active Only</SelectItem>
-                    <SelectItem value="archived">Archived Only</SelectItem>
-                    <SelectItem value="all">All (Incl. Archived)</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-
-        <div className="lg:col-span-4 flex gap-2">
-            <div className="relative flex-1">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => { setStartDate(e.target.value); setPage(0); }}
-                    className="pl-10 h-11 bg-background rounded-lg border-2 border-border/10 text-xs"
-                    title="Start Date"
-                />
-            </div>
-            <div className="relative flex-1">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => { setEndDate(e.target.value); setPage(0); }}
-                    className="pl-10 h-11 bg-background rounded-lg border-2 border-border/10 text-xs"
-                    title="End Date"
-                />
-            </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsCategoryManageOpen(true)}
+            size="sm"
+            className="h-9 rounded-none border-2 font-bold text-[10px] uppercase"
+          >
+            <Settings className="w-3.5 h-3.5 mr-2" />
+            Categories
+          </Button>
+          <Button 
+            onClick={() => navigate("/support/articles/create")}
+            size="sm"
+            className="h-9 rounded-none font-bold text-[10px] uppercase px-4"
+          >
+            <Plus className="w-3.5 h-3.5 mr-2" />
+            New Article
+          </Button>
         </div>
       </div>
 

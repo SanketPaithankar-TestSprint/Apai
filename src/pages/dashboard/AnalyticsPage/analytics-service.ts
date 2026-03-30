@@ -11,4 +11,22 @@ export const AnalyticsService = {
     }
     return response.json();
   },
+
+  async getTicketAnalytics() {
+    const response = await fetchWithAuth(API_ENDPOINTS.ANALYTICS_TICKETS);
+    if (!response.ok) throw new Error("Failed to fetch ticket analytics");
+    return response.json();
+  },
+
+  async getCallAnalytics() {
+    const response = await fetchWithAuth(API_ENDPOINTS.ANALYTICS_CALLS);
+    if (!response.ok) throw new Error("Failed to fetch call analytics");
+    return response.json();
+  },
+
+  async getArticleAnalytics() {
+    const response = await fetchWithAuth(API_ENDPOINTS.ANALYTICS_ARTICLES);
+    if (!response.ok) throw new Error("Failed to fetch article analytics");
+    return response.json();
+  },
 };

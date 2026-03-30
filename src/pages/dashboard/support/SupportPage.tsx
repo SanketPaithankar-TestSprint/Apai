@@ -1,110 +1,107 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
-  MessageCircle, 
   HelpCircle, 
   BookOpen, 
-  Mail
+  Phone
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSearchParams } from "react-router-dom"
-import { TicketsTab } from "./TicketsTab"
+import { TicketsTab } from "./TicketsTabNew"
 import { HelpArticlesTab } from "./HelpArticlesTab"
-import { AdminSupportDashboard } from "@/components/support/chat/AdminSupportDashboard"
+import { CallRequestsTab } from "./CallRequestsTab"
 import { getCookie } from "@/lib/fetchWithAuth"
+import { callRequestService } from "@/services/call-request-service"
 
 export default function SupportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "tickets"
+  const [hasPendingCalls, setHasPendingCalls] = useState(false)
 
   const setActiveTab = (value: string) => {
     setSearchParams({ tab: value })
   }
 
+  useEffect(() => {
+    const checkPendingCalls = async () => {
+      try {
+        const responseData = await callRequestService.getCallRequests()
+        // Handle potential nested data structure
+        const requests = Array.isArray(responseData) 
+          ? responseData 
+          : (responseData as any).data || (responseData as any).requests || []
+          
+        if (Array.isArray(requests)) {
+          const hasPending = requests.some(r => 
+            r.status === 'SCHEDULED' || 
+            r.status === 'IN_PROGRESS'
+          )
+          setHasPendingCalls(hasPending)
+        }
+      } catch (error) {
+        console.error("Failed to check pending calls:", error)
+      }
+    }
+    checkPendingCalls()
+  }, [])
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4 animate-in fade-in duration-500 -mt-2">
+      {/* Compact Header Integrated with Tabs */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Support Hub</h1>
-          <p className="text-muted-foreground">Manage your customer experience across all communication channels.</p>
+          <h1 className="text-lg font-bold tracking-tight">Support Hub</h1>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full lg:w-auto">
+          <TabsList className="h-9 p-0 bg-transparent rounded-none gap-0 border-2 border-primary/20">
+            <TabsTrigger 
+              value="tickets" 
+              className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0"
+            >
+              <HelpCircle className="w-3.5 h-3.5 mr-2" />
+              Tickets
+            </TabsTrigger>
+            <TabsTrigger 
+              value="articles" 
+              className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0"
+            >
+              <BookOpen className="w-3.5 h-3.5 mr-2" />
+              Articles
+            </TabsTrigger>
+            <TabsTrigger 
+              value="call-requests" 
+              className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0 relative"
+            >
+              <Phone className="w-3.5 h-3.5 mr-2" />
+              Call Requests
+              {hasPendingCalls && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background animate-pulse" />
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2">
-            <TabsList className="h-14 p-1 w-full md:w-auto bg-muted/50 rounded-2xl gap-2 border border-border/50">
-                <TabsTrigger 
-                    value="tickets" 
-                    className="h-full px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-                >
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    Support Tickets
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="enquiries" 
-                    className="h-full px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-                >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Contact Enquiries
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="articles" 
-                    className="h-full px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-                >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Help Articles
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="livehelp" 
-                    className="h-full px-6 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-                >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Live Help
-                </TabsTrigger>
-            </TabsList>
-        </div>
+      <div className="pt-2">
+        <Tabs value={activeTab} className="space-y-0">
+          <TabsContent value="tickets" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
+            <TicketsTab 
+              adminId={getCookie("adminId") || "ADMIN_SYS_001"} 
+              token={getCookie("token") || ""} 
+            />
+          </TabsContent>
 
-        <TabsContent value="tickets" className="animate-in slide-in-from-bottom-2 duration-300">
-          <TicketsTab />
-        </TabsContent>
-
-        <TabsContent value="enquiries" className="animate-in slide-in-from-bottom-2 duration-300">
-          <div className="bg-card rounded-2xl border border-border p-12 text-center shadow-lg">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                <Mail className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3">Contact Enquiries</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
-              Manage messages from your website's contact form and general customer enquiries.
-            </p>
-            <div className="bg-muted/30 p-8 rounded-xl border border-dashed border-border mb-8">
-                <p className="italic text-muted-foreground">Contact enquiry integration coming soon...</p>
-            </div>
-            <div className="flex gap-4 justify-center">
-                <button className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity">
-                    Configure Form
-                </button>
-                <button className="px-6 py-3 border border-border rounded-xl font-bold hover:bg-muted transition-colors">
-                    Export Archive
-                </button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="articles" className="animate-in slide-in-from-bottom-2 duration-300">
+          <TabsContent value="articles" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
             <HelpArticlesTab />
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="livehelp" className="animate-in slide-in-from-bottom-2 duration-300">
-            <div className="w-full">
-                <AdminSupportDashboard
-                    adminId="ADMIN_SYS_001"
-                    token={getCookie("token") || ""}
-                />
-            </div>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="call-requests" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
+            <CallRequestsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

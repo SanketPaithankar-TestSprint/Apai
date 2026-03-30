@@ -1,4 +1,4 @@
-import { BarChart3, Users, BookOpen, LogOut, LucideIcon, LifeBuoy } from "lucide-react"
+import { BarChart3, Users, BookOpen, LogOut, LucideIcon, LifeBuoy, History } from "lucide-react"
 
 export interface NavItem {
   label: string
@@ -27,6 +27,11 @@ export const navItems: NavItem[] = [
     label: "Support Hub",
     href: "/support",
     icon: LifeBuoy,
+  },
+  {
+    label: "Audit Logs",
+    href: "/audit-logs",
+    icon: History,
   },
   {
     label: "Logout",

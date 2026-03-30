@@ -88,13 +88,18 @@ export const useAdminSupportChat = ({ adminId: initialAdminId, token }: UseAdmin
         
         switch (data.type) {
           case "CONVERSATIONS_LIST":
-            // Spec Step 3: data.data contains the array
             if (data.data) {
-              console.log("[Chat] Setting conversations from data.data:", data.data);
-              setConversations(data.data);
+              const standardized = data.data.map((c: any) => ({
+                ...c,
+                id: c.id || c.conversationId
+              }));
+              setConversations(standardized);
             } else if (data.conversations) {
-              console.log("[Chat] Setting conversations from data.conversations:", data.conversations);
-              setConversations(data.conversations);
+              const standardized = data.conversations.map((c: any) => ({
+                ...c,
+                id: c.id || c.conversationId
+              }));
+              setConversations(standardized);
             }
             break;
 

@@ -13,6 +13,7 @@ const BlogEditPage = lazy(() => import("@/pages/dashboard/blogs/BlogEditPage"));
 const BlogViewPage = lazy(() => import("@/pages/dashboard/blogs/BlogViewPage"));
 const UsersPage = lazy(() => import("@/pages/dashboard/UsersPage"));
 const SupportPage = lazy(() => import("@/pages/dashboard/support/SupportPage"));
+const AuditLogsPage = lazy(() => import("@/pages/dashboard/AuditLogsPage"));
 const ArticleCreatePage = lazy(() => import("@/pages/dashboard/support/ArticleCreatePage"));
 const ArticleEditPage = lazy(() => import("@/pages/dashboard/support/ArticleEditPage"));
 
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/blogs/edit" element={<BlogEditPage />} />
           <Route path="/blogs/view" element={<BlogViewPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/support/articles/create" element={<ArticleCreatePage />} />
           <Route path="/support/articles/edit/:id" element={<ArticleEditPage />} />

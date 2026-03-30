@@ -33,7 +33,10 @@ import {
   Users,
   Loader2,
   Calendar,
-  Info
+  Info,
+  Ticket,
+  PhoneCall,
+  FileText
 } from "lucide-react";
 import { AnalyticsService } from "./analytics-service";
 import { AnalyticsDashboardData } from "./analytics-types";
@@ -88,7 +91,7 @@ function MetricCard({
   description?: string;
 }) {
   return (
-    <div className="border border-border p-6 rounded-lg bg-card hover:border-border/80 transition-colors">
+    <div className="border border-border p-6 rounded-none bg-card hover:border-black transition-colors shadow-sm">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-1.5 mb-1">
@@ -128,6 +131,9 @@ export function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [growthDays, setGrowthDays] = useState("30");
+  const [ticketData, setTicketData] = useState<any>(null);
+  const [callData, setCallData] = useState<any>(null);
+  const [articleData, setArticleData] = useState<any>(null);
 
   const topContentData = data?.topContentByViews.map((item, index) => ({
     ...item,
@@ -138,8 +144,17 @@ export function AnalyticsPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        const result = await AnalyticsService.getDashboardData(parseInt(growthDays));
+        const [result, tickets, calls, articles] = await Promise.all([
+          AnalyticsService.getDashboardData(parseInt(growthDays)),
+          AnalyticsService.getTicketAnalytics().catch(() => null),
+          AnalyticsService.getCallAnalytics().catch(() => null),
+          AnalyticsService.getArticleAnalytics().catch(() => null)
+        ]);
+        
         setData(result);
+        setTicketData(tickets);
+        setCallData(calls);
+        setArticleData(articles);
         setError(null);
       } catch (err) {
         console.error("Error fetching analytics:", err);
@@ -193,22 +208,19 @@ export function AnalyticsPage() {
   }));
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">
-            Platform-wide performance and engagement metrics.
-          </p>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-bold tracking-tight">Analytics Dashboard</h1>
         </div>
         
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <Select value={growthDays} onValueChange={setGrowthDays}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-none">
               <SelectItem value="7">Last 7 days</SelectItem>
               <SelectItem value="30">Last 30 days</SelectItem>
               <SelectItem value="90">Last 90 days</SelectItem>
@@ -244,10 +256,44 @@ export function AnalyticsPage() {
         />
       </div>
 
+      <div className="space-y-6 pt-2">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Help and Support Analytics</h2>
+          <div className="h-[2px] flex-1 bg-muted/30" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-2 duration-500">
+          <MetricCard
+            title="Support Tickets"
+            value={ticketData?.total || 0}
+            change={`${ticketData?.open || 0} Open`}
+            isPositive={false}
+            icon={<Ticket className="h-6 w-6 text-orange-500" />}
+            description="Total volume of support tickets received and currently open requests."
+          />
+          <MetricCard
+            title="Call Requests"
+            value={callData?.total || 0}
+            change={`${callData?.pending || 0} Pending`}
+            isPositive={false}
+            icon={<PhoneCall className="h-6 w-6 text-indigo-500" />}
+            description="Cumulative call support requests and the current scheduling backlog."
+          />
+          <MetricCard
+            title="Knowledge Base"
+            value={articleData?.total || 0}
+            change={`${articleData?.views || 0} Total Views`}
+            isPositive={true}
+            icon={<FileText className="h-6 w-6 text-amber-500" />}
+            description="Total number of published help articles and their cumulative engagement."
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-border p-6 rounded-lg bg-card shadow-sm">
+        <div className="border border-border p-6 rounded-none bg-card shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold">User Growth</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">User Growth</h2>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -296,9 +342,9 @@ export function AnalyticsPage() {
           </ChartContainer>
         </div>
 
-        <div className="border border-border p-6 rounded-lg bg-card shadow-sm">
+        <div className="border border-border p-6 rounded-none bg-card shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold">Top Content Performance</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Top Content Performance</h2>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -376,9 +422,9 @@ export function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-border p-6 rounded-lg bg-card shadow-sm">
+        <div className="border border-border p-6 rounded-none bg-card shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold">Views Trend</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Views Trend</h2>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -424,7 +470,7 @@ export function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="border border-border p-6 rounded-lg bg-card shadow-sm flex flex-col items-center">
+          <div className="border border-border p-6 rounded-none bg-card shadow-sm flex flex-col items-center">
             <div className="flex items-center gap-2 mb-4 w-full">
               <h2 className="text-sm font-semibold">User Roles</h2>
               <TooltipProvider>
@@ -477,9 +523,9 @@ export function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="border border-border p-6 rounded-lg bg-card shadow-sm flex flex-col items-center">
+          <div className="border border-border p-6 rounded-none bg-card shadow-sm flex flex-col items-center">
             <div className="flex items-center gap-2 mb-4 w-full">
-              <h2 className="text-sm font-semibold">Plans</h2>
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Plans</h2>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -534,8 +580,8 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="border border-border p-6 rounded-lg bg-card shadow-sm">
-        <h2 className="text-lg font-semibold mb-6">Engagement & Usage Breakdown</h2>
+      <div className="border border-border p-6 rounded-none bg-card shadow-sm">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground mb-6">Engagement & Usage Breakdown</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <TooltipProvider>
             <Tooltip>

@@ -1,8 +1,11 @@
 export const API_BASE_URL = import.meta.env.VITE_JAVA_BACKEND_URL as string | undefined;
 export const CDN_BASE_URL = import.meta.env.VITE_CDN_BASE_URL as string | undefined;
-export const CHAT_WS_URL = import.meta.env.VITE_CHAT_WS_URL as string | undefined;
+export const CHAT_WS_URL = "wss://y3rxp208gj.execute-api.us-east-1.amazonaws.com/prod/";
 export const API_ENDPOINTS = {
   ANALYTICS: `${API_BASE_URL}admin/analytics`,
+  ANALYTICS_TICKETS: `${API_BASE_URL}admin/analytics/tickets`,
+  ANALYTICS_CALLS: `${API_BASE_URL}admin/analytics/calls`,
+  ANALYTICS_ARTICLES: `${API_BASE_URL}admin/analytics/articles`,
   USERS: `${API_BASE_URL}users`,
   BLOGS: `${API_BASE_URL}v1/blogs`,
   BLOG_UPLOAD_IMAGE: `${API_BASE_URL}v1/blogs/upload-image`,
@@ -26,7 +29,13 @@ export const API_ENDPOINTS = {
 
   // Help Articles (Knowledge Base)
   ADMIN_ARTICLES: `${API_BASE_URL}admin/articles`,
+  SUPPORT_ARTICLE: (id: string) => `${API_BASE_URL}support/articles/${id}`,
   ADMIN_ARTICLE: (id: string) => `${API_BASE_URL}admin/articles/${id}`,
   ADMIN_CATEGORIES: `${API_BASE_URL}admin/categories`,
   ADMIN_CATEGORY: (id: number) => `${API_BASE_URL}admin/categories/${id}`,
+
+  // Call Requests
+  ADMIN_CALL_REQUESTS: `${API_BASE_URL}admin/call-requests`,
+  ADMIN_CALL_REQUEST_STATUS: (id: string) => `${API_BASE_URL}admin/call-requests/${id}/status`,
+  ADMIN_CALL_REQUEST_NOTES: (id: string) => `${API_BASE_URL}admin/call-requests/${id}/notes`,
 };
