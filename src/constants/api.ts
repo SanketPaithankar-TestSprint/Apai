@@ -38,4 +38,5 @@ export const API_ENDPOINTS = {
   ADMIN_CALL_REQUESTS: `${API_BASE_URL}admin/call-requests`,
   ADMIN_CALL_REQUEST_STATUS: (id: string) => `${API_BASE_URL}admin/call-requests/${id}/status`,
   ADMIN_CALL_REQUEST_NOTES: (id: string) => `${API_BASE_URL}admin/call-requests/${id}/notes`,
+  ADMIN_FEEDBACK: `${API_BASE_URL}feedback`,
 };
