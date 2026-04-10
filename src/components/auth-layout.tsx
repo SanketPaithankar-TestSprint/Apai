@@ -1,6 +1,5 @@
-import Image from "next/image"
 import { ReactNode } from "react"
-import apaiLogo from "@/assets/apai.png"
+import apaiLogo from "../assets/apai.png"
 
 interface AuthLayoutProps {
   children: ReactNode
@@ -13,14 +12,7 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       {/* Logo Section */}
       <div className="mb-12 flex flex-col items-center">
-        <Image
-          src={apaiLogo}
-          alt="APAI Logo"
-          width={64}
-          height={64}
-          className="mb-3"
-          priority
-        />
+        <img src={apaiLogo} alt="APAI Logo" width={64} height={64} className="mb-3" />
       </div>
 
       {/* Form Container */}

@@ -1,19 +1,19 @@
 "use client"
 
-import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { navItems } from "@/constants/navigation"
 import { useSidebar } from "@/hooks/use-sidebar"
 
 export function Sidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
   const { isOpen, closeSidebar } = useSidebar()
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
-      router.push("/login")
+      // Clear token cookie locally
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      navigate("/login", { replace: true })
     } catch (error) {
       console.error("Logout error:", error)
     }
@@ -82,7 +82,7 @@ export function Sidebar() {
             return (
               <Link
                 key={item.href}
-                href={item.href || "/"}
+                to={item.href || "/"}
                 onClick={handleLinkClick}
                 className={`flex items-center gap-3 px-4 py-3 rounded-none text-sm font-medium transition-colors justify-center ${isOpen ? "justify-start" : ""
                   } ${isActive

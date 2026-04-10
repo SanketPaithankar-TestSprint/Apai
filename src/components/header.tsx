@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { Menu } from "lucide-react"
 import apaiLogo from "@/assets/apai.png"
 import { useSidebar } from "@/hooks/use-sidebar"
@@ -20,13 +19,7 @@ export function Header() {
       </button>
 
       {/* Logo */}
-      <Image
-        src={apaiLogo}
-        alt="APAI Logo"
-        width={56}
-        height={56}
-        className="flex-shrink-0"
-      />
+      <img src={apaiLogo} alt="APAI Logo" width={56} height={56} className="flex-shrink-0" />
     </header>
   )
 }

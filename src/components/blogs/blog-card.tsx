@@ -4,7 +4,7 @@ import { Blog } from "@/types/blog";
 import { CDN_BASE_URL } from "@/constants/api";
 import { format } from "date-fns";
 import { Edit, Trash2, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -13,7 +13,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import Image from "next/image";
 
 interface BlogCardProps {
     blog: Blog;
@@ -45,12 +44,7 @@ export function BlogCard({ blog, onDelete }: BlogCardProps) {
         <Card className="overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
             <div className="relative h-48 w-full bg-muted">
                 {image ? (
-                    <Image
-                        src={image}
-                        alt={blog.title}
-                        fill
-                        className="object-cover"
-                    />
+                    <img src={image} alt={blog.title} className="w-full h-full object-cover" />
                 ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         No Image
@@ -79,13 +73,13 @@ export function BlogCard({ blog, onDelete }: BlogCardProps) {
             </CardContent>
             <CardFooter className="flex justify-between border-t pt-4">
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/blogs/${linkId}`}>
+                    <Link to={`/blogs/view?slug=${linkId}`}>
                         View Details <ExternalLink className="ml-1 h-3 w-3" />
                     </Link>
                 </Button>
                 <div className="flex gap-2">
                     <Button variant="outline" size="icon" asChild>
-                        <Link href={`/blogs/${linkId}/edit`}>
+                        <Link to={`/blogs/edit?slug=${linkId}`}>
                             <Edit className="h-4 w-4" />
                         </Link>
                     </Button>

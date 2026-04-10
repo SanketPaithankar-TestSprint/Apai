@@ -1,17 +1,19 @@
+import { API_ENDPOINTS } from "@/constants/api";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import { Blog, CreateBlogDto, UpdateBlogDto } from "@/types/blog";
 
-const API_URL = "/api/blogs";
+const API_URL = API_ENDPOINTS.BLOGS;
 
 export const BlogService = {
     async getAll(query?: string): Promise<Blog[]> {
         const url = query ? `${API_URL}?${query}` : API_URL;
-        const response = await fetch(url);
+        const response = await fetchWithAuth(url);
         if (!response.ok) throw new Error("Failed to fetch blogs");
         return response.json();
     },
 
     async getById(id: string): Promise<Blog> {
-        const response = await fetch(`${API_URL}/${id}`);
+        const response = await fetchWithAuth(`${API_URL}/${id}`);
         if (!response.ok) throw new Error("Failed to fetch blog");
         return response.json();
     },
@@ -29,6 +31,7 @@ export const BlogService = {
             metaDescription: data.metaDescription || null,
             // Don't send coverImageUrl if we have the actual file - only send if no file
             coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
+            images: data.images || [],
         };
 
         console.log("Blog data to send:", JSON.stringify(blogData, null, 2));
@@ -42,7 +45,7 @@ export const BlogService = {
 
         try {
             console.log("Sending POST request to:", `${API_URL}`);
-            const response = await fetch(`${API_URL}`, {
+            const response = await fetchWithAuth(`${API_URL}`, {
                 method: "POST",
                 body: formData,
             });
@@ -84,6 +87,7 @@ export const BlogService = {
             metaTitle: data.metaTitle || null,
             metaDescription: data.metaDescription || null,
             coverImageUrl: data.coverImageFile ? null : (data.coverImageUrl || null),
+            images: data.images || [],
         };
 
         formData.append("data", JSON.stringify(blogData));
@@ -92,7 +96,7 @@ export const BlogService = {
             formData.append("coverImage", data.coverImageFile);
         }
 
-        const response = await fetch(`${API_URL}/${id}`, {
+        const response = await fetchWithAuth(`${API_URL}/${id}`, {
             method: "PUT",
             body: formData,
         });
@@ -104,7 +108,7 @@ export const BlogService = {
     },
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`${API_URL}/${id}`, {
+        const response = await fetchWithAuth(`${API_URL}/${id}`, {
             method: "DELETE",
         });
         if (!response.ok) throw new Error("Failed to delete blog");
@@ -114,12 +118,31 @@ export const BlogService = {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch(`${API_URL}/upload-image`, {
+        const response = await fetchWithAuth(API_ENDPOINTS.BLOG_UPLOAD_IMAGE, {
             method: "POST",
             body: formData,
         });
 
-        if (!response.ok) throw new Error("Failed to upload image");
-        return response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("[uploadImage] Error:", response.status, errorText);
+            throw new Error(`Failed to upload image: ${response.status}`);
+        }
+
+        // The API may return a plain string URL or a JSON object { url: "..." }
+        const text = await response.text();
+        console.log("[uploadImage] Raw response:", text);
+
+        try {
+            const json = JSON.parse(text);
+            // If it's a JSON object with a url property
+            if (typeof json === "object" && json.url) return json;
+            // If it's a JSON string (e.g. "\"some-url\"")
+            if (typeof json === "string") return { url: json };
+            return { url: text };
+        } catch {
+            // Plain text response — just wrap it
+            return { url: text.replace(/^"|"$/g, "") };
+        }
     },
 };
