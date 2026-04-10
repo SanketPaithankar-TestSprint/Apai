@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { MoreVertical, Plus, FileText, Loader2, Search, X, Code2, Users } from "lucide-react"
+import { MoreVertical, Plus, FileText, Loader2, Search, X, Users } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/EmptyState"
 import {
@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchWithAuth } from "@/lib/fetchWithAuth"
 import { API_ENDPOINTS } from "@/constants/api"
 
@@ -57,7 +56,6 @@ interface User {
   subscriptionPlan: string | null
   subscriptionExpiryDate: string | null
   createdAt: string | null
-  isDeveloper?: boolean
 }
 
 function EditSubscriptionModal({
@@ -358,7 +356,6 @@ function CreateTestAccountModal({
 
 export function UsersPage() {
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState("users")
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -469,7 +466,6 @@ export function UsersPage() {
       subscriptionPlan: "Premium",
       subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
       createdAt: "2025-01-01T10:00:00.000Z",
-      isDeveloper: false,
     },
     {
       userId: 2,
@@ -485,79 +481,45 @@ export function UsersPage() {
       subscriptionPlan: "Basic",
       subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
       createdAt: "2025-02-15T10:00:00.000Z",
-      isDeveloper: false,
-    },
-    {
-      userId: 3,
-      ownerName: "Dev Master",
-      email: "dev@autopane.ai",
-      phone: "9876543230",
-      alternatePhone: "9876543231",
-      businessName: "APAI Core",
-      isActive: true,
-      isOnline: true,
-      lastActivity: new Date().toISOString(),
-      subscriptionStatus: "ACTIVE",
-      subscriptionPlan: "ENTERPRISE",
-      subscriptionExpiryDate: "2027-12-31T23:59:59.999Z",
-      createdAt: "2024-01-01T10:00:00.000Z",
-      isDeveloper: true,
     },
   ]
 
   const dataUsers = users.length > 0 ? users : mockUsers
 
-  const displayUsers = dataUsers
-    .filter((user) => {
-      const isDev = !!user.isDeveloper
-      return activeTab === "developers" ? isDev : !isDev
-    })
-    .filter(filterUser)
+  const displayUsers = dataUsers.filter(filterUser)
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
-          <div className="flex items-center gap-6 flex-1">
-            <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
-            
-            <TabsList variant="line" className="h-9">
-              <TabsTrigger value="users" className="gap-2 px-4">
-                <Users className="w-4 h-4" />
-                Normal Users
-              </TabsTrigger>
-              <TabsTrigger value="developers" className="gap-2 px-4">
-                <Code2 className="w-4 h-4" />
-                Developers
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="relative w-full max-w-[300px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-8 h-9 rounded-none border-2"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setShowCreateTest(true)} size="sm" className="h-9 rounded-none font-bold text-xs uppercase">
-              <Plus className="w-4 h-4 mr-2" />
-              Generate Test User
-            </Button>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
+        <div className="flex items-center gap-6 flex-1">
+          <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
+          
+          <div className="relative w-full max-w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 h-9 rounded-none border-2"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={() => setShowCreateTest(true)} size="sm" className="h-9 rounded-none font-bold text-xs uppercase">
+            <Plus className="w-4 h-4 mr-2" />
+            Generate Test User
+          </Button>
+        </div>
+      </div>
 
         {isLoading && (
           <div className="flex items-center justify-center py-8">
@@ -575,7 +537,7 @@ export function UsersPage() {
         )}
 
         {!isLoading && (
-          <TabsContent value={activeTab} className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
+        <div className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
@@ -598,8 +560,8 @@ export function UsersPage() {
                   <tr>
                     <td colSpan={12} className="p-0">
                       <EmptyState 
-                        title={`No ${activeTab === 'developers' ? 'Developers' : 'Users'} Found`}
-                        description={`We couldn't find any ${activeTab === 'developers' ? 'developers' : 'users'} matching your current criteria or search query.`}
+                        title="No Users Found"
+                        description="We couldn't find any users matching your current criteria or search query."
                         className="border-none bg-transparent py-20"
                       />
                     </td>
@@ -743,9 +705,8 @@ export function UsersPage() {
                 )}
               </tbody>
             </table>
-          </TabsContent>
-        )}
-      </Tabs>
+        </div>
+      )}
 
       {editUser && (
         <EditSubscriptionModal

@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSearchParams } from "react-router-dom"
-import { TicketsTab } from "./TicketsTabNew"
+// import { TicketsTab } from "./TicketsTabNew"
 import { HelpArticlesTab } from "./HelpArticlesTab"
 import { CallRequestsTab } from "./CallRequestsTab"
 import { FeedbacksTab } from "./FeedbacksTab"
@@ -18,7 +18,7 @@ import { callRequestService } from "@/services/call-request-service"
 
 export default function SupportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get("tab") || "tickets"
+  const activeTab = searchParams.get("tab") || "articles"
   const [hasPendingCalls, setHasPendingCalls] = useState(false)
 
   const setActiveTab = (value: string) => {
@@ -58,13 +58,15 @@ export default function SupportPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full lg:w-auto">
           <TabsList className="h-9 p-0 bg-transparent rounded-none gap-0 border-2 border-primary/20">
+{/* 
             <TabsTrigger 
               value="tickets" 
               className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0"
             >
               <HelpCircle className="w-3.5 h-3.5 mr-2" />
               Tickets
-            </TabsTrigger>
+            </TabsTrigger> 
+            */}
             <TabsTrigger 
               value="articles" 
               className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0"
@@ -95,12 +97,14 @@ export default function SupportPage() {
 
       <div className="pt-2">
         <Tabs value={activeTab} className="space-y-0">
+{/* 
           <TabsContent value="tickets" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
             <TicketsTab 
               adminId={getCookie("adminId") || "ADMIN_SYS_001"} 
               token={getCookie("token") || ""} 
             />
-          </TabsContent>
+          </TabsContent> 
+          */}
 
           <TabsContent value="articles" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
             <HelpArticlesTab />
