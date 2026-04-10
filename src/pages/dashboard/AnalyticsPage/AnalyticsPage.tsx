@@ -34,7 +34,6 @@ import {
   Loader2,
   Calendar,
   Info,
-  Ticket,
   PhoneCall,
   FileText
 } from "lucide-react";
@@ -262,7 +261,8 @@ export function AnalyticsPage() {
           <div className="h-[2px] flex-1 bg-muted/30" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-2 duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-2 duration-500">
+{/* 
           <MetricCard
             title="Support Tickets"
             value={ticketData?.total || 0}
@@ -270,7 +270,8 @@ export function AnalyticsPage() {
             isPositive={false}
             icon={<Ticket className="h-6 w-6 text-orange-500" />}
             description="Total volume of support tickets received and currently open requests."
-          />
+          /> 
+          */}
           <MetricCard
             title="Call Requests"
             value={callData?.total || 0}
