@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { MoreVertical, Plus, FileText, Loader2, Search, X } from "lucide-react"
+import { MoreVertical, Plus, FileText, Loader2, Search, X, Code2, Users } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/EmptyState"
 import {
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchWithAuth } from "@/lib/fetchWithAuth"
 import { API_ENDPOINTS } from "@/constants/api"
 
@@ -56,6 +57,7 @@ interface User {
   subscriptionPlan: string | null
   subscriptionExpiryDate: string | null
   createdAt: string | null
+  isDeveloper?: boolean
 }
 
 function EditSubscriptionModal({
@@ -356,6 +358,7 @@ function CreateTestAccountModal({
 
 export function UsersPage() {
   const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState("users")
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -379,7 +382,7 @@ export function UsersPage() {
 
       const data = await response.json()
       const usersList = Array.isArray(data) ? data : data.data || data.users || []
-      return usersList
+      return usersList as User[]
     },
   })
 
@@ -441,7 +444,7 @@ export function UsersPage() {
   }
 
   // Filter both live and mock users
-  const filterUser = (user: any) => {
+  const filterUser = (user: User) => {
     const query = searchQuery.toLowerCase()
     return (
       user.ownerName?.toLowerCase().includes(query) ||
@@ -451,276 +454,298 @@ export function UsersPage() {
     )
   }
 
-  const displayUsers =
-    users.length > 0
-      ? users.filter(filterUser)
-      : [
-          {
-            userId: 1,
-            ownerName: "John Doe",
-            email: "john@example.com",
-            phone: "9876543210",
-            alternatePhone: "9876543211",
-            businessName: "Tech Solutions",
-            isActive: true,
-            isOnline: true,
-            lastActivity: new Date().toISOString(),
-            subscriptionStatus: "ACTIVE",
-            subscriptionPlan: "Premium",
-            subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
-            createdAt: "2025-01-01T10:00:00.000Z",
-          },
-          {
-            userId: 2,
-            ownerName: "Jane Smith",
-            email: "jane@example.com",
-            phone: "9876543220",
-            alternatePhone: "9876543221",
-            businessName: "Creative Studio",
-            isActive: true,
-            isOnline: false,
-            lastActivity: new Date(Date.now() - 3600000).toISOString(),
-            subscriptionStatus: "ACTIVE",
-            subscriptionPlan: "Basic",
-            subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
-            createdAt: "2025-02-15T10:00:00.000Z",
-          },
-          {
-            userId: 3,
-            ownerName: "Bob Johnson",
-            email: "bob@example.com",
-            phone: "9876543230",
-            alternatePhone: "9876543231",
-            businessName: "Business Services",
-            isActive: false,
-            isOnline: false,
-            lastActivity: "2025-12-01T10:00:00.000Z",
-            subscriptionStatus: "INACTIVE",
-            subscriptionPlan: "Standard",
-            subscriptionExpiryDate: "2025-12-31T23:59:59.999Z",
-            createdAt: "2024-12-01T10:00:00.000Z",
-          },
-        ].filter(filterUser)
+  const mockUsers: User[] = [
+    {
+      userId: 1,
+      ownerName: "John Doe",
+      email: "john@example.com",
+      phone: "9876543210",
+      alternatePhone: "9876543211",
+      businessName: "Tech Solutions",
+      isActive: true,
+      isOnline: true,
+      lastActivity: new Date().toISOString(),
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "Premium",
+      subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
+      createdAt: "2025-01-01T10:00:00.000Z",
+      isDeveloper: false,
+    },
+    {
+      userId: 2,
+      ownerName: "Jane Smith",
+      email: "jane@example.com",
+      phone: "9876543220",
+      alternatePhone: "9876543221",
+      businessName: "Creative Studio",
+      isActive: true,
+      isOnline: false,
+      lastActivity: new Date(Date.now() - 3600000).toISOString(),
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "Basic",
+      subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
+      createdAt: "2025-02-15T10:00:00.000Z",
+      isDeveloper: false,
+    },
+    {
+      userId: 3,
+      ownerName: "Dev Master",
+      email: "dev@autopane.ai",
+      phone: "9876543230",
+      alternatePhone: "9876543231",
+      businessName: "APAI Core",
+      isActive: true,
+      isOnline: true,
+      lastActivity: new Date().toISOString(),
+      subscriptionStatus: "ACTIVE",
+      subscriptionPlan: "ENTERPRISE",
+      subscriptionExpiryDate: "2027-12-31T23:59:59.999Z",
+      createdAt: "2024-01-01T10:00:00.000Z",
+      isDeveloper: true,
+    },
+  ]
+
+  const dataUsers = users.length > 0 ? users : mockUsers
+
+  const displayUsers = dataUsers
+    .filter((user) => {
+      const isDev = !!user.isDeveloper
+      return activeTab === "developers" ? isDev : !isDev
+    })
+    .filter(filterUser)
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
-        <div className="flex items-center gap-4 flex-1">
-          <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
-          
-          <div className="relative w-full max-w-[300px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 h-9 rounded-none border-2"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
+          <div className="flex items-center gap-6 flex-1">
+            <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
+            
+            <TabsList variant="line" className="h-9">
+              <TabsTrigger value="users" className="gap-2 px-4">
+                <Users className="w-4 h-4" />
+                Normal Users
+              </TabsTrigger>
+              <TabsTrigger value="developers" className="gap-2 px-4">
+                <Code2 className="w-4 h-4" />
+                Developers
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="relative w-full max-w-[300px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9 rounded-none border-2"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button onClick={() => setShowCreateTest(true)} size="sm" className="h-9 rounded-none font-bold text-xs uppercase">
+              <Plus className="w-4 h-4 mr-2" />
+              Generate Test User
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button onClick={() => setShowCreateTest(true)} size="sm" className="h-9 rounded-none font-bold text-xs uppercase">
-            <Plus className="w-4 h-4 mr-2" />
-            Generate Test User
-          </Button>
-        </div>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-muted-foreground">Loading users...</p>
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-muted-foreground">Loading users...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {error && (
-        <div className="p-4 bg-destructive/10 text-destructive rounded-none border border-destructive/20 mb-4">
-          {error instanceof Error ? error.message : "Failed to load users"}
-        </div>
-      )}
+        {error && (
+          <div className="p-4 bg-destructive/10 text-destructive rounded-none border border-destructive/20 mb-4">
+            {error instanceof Error ? error.message : "Failed to load users"}
+          </div>
+        )}
 
-      {!isLoading && (
-        <div className="border border-border rounded-none overflow-x-auto shadow-sm">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Business Name</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Owner Name</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Email</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Phone</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Alt Phone</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Activity</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Plan</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Sub Status</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Expiry</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Created At</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Active</th>
-                <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="p-0">
-                    <EmptyState 
-                      title="No Users Found"
-                      description="We couldn't find any users matching your current criteria or search query."
-                      className="border-none bg-transparent py-20"
-                    />
-                  </td>
+        {!isLoading && (
+          <TabsContent value={activeTab} className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Business Name</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Owner Name</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Email</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Phone</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Alt Phone</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Activity</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Plan</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Sub Status</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Expiry</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Created At</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Active</th>
+                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Actions</th>
                 </tr>
-              ) : (
-                displayUsers.map((user: User) => (
-                  <tr
-                    key={user.userId}
-                    className="border-b border-border hover:bg-muted/50 transition-colors"
-                  >
-                    <td
-                      className="px-3 py-2 font-medium truncate max-w-[150px]"
-                      title={
-                        user.businessName && user.businessName !== "null" ? user.businessName : "N/A"
-                      }
-                    >
-                      {user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
-                    </td>
-                    <td
-                      className="px-3 py-2 truncate max-w-[120px]"
-                      title={user.ownerName || "N/A"}
-                    >
-                      {user.ownerName || "N/A"}
-                    </td>
-                    <td
-                      className="px-3 py-2 text-muted-foreground truncate max-w-[150px]"
-                      title={user.email || "N/A"}
-                    >
-                      {user.email || "N/A"}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
-                      {user.phone || "N/A"}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
-                      {user.alternatePhone || "N/A"}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              user.isOnline
-                                ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                                : "bg-gray-300"
-                            }`}
-                          />
-                          <span
-                            className={`font-medium ${
-                              user.isOnline ? "text-green-700" : "text-muted-foreground"
-                            }`}
-                          >
-                            {user.isOnline ? "Online" : "Offline"}
-                          </span>
-                        </div>
-                        {!user.isOnline && user.lastActivity && (
-                          <span className="text-[9px] text-muted-foreground">
-                            Last:{" "}
-                            {new Date(user.lastActivity).toLocaleString([], {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">{user.subscriptionPlan || "N/A"}</td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                          user.subscriptionStatus === "ACTIVE"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {user.subscriptionStatus || "N/A"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {user.subscriptionExpiryDate
-                        ? new Date(user.subscriptionExpiryDate).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
-                    </td>
-                    <td className="px-3 py-2">
-                      {togglingUserId === user.userId ? (
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
-                          <span className="text-[10px] text-muted-foreground">...</span>
-                        </div>
-                      ) : (
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                            user.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {user.isActive ? "Active" : "Not Active"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditUser(user)}>
-                            Edit Subscription
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleViewLicense(user.userId)}>
-                            <FileText className="w-4 h-4 mr-2" />
-                            View Business License
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setTogglingUserId(user.userId)
-                              toggleStatusMutation.mutate(user.userId)
-                            }}
-                          >
-                            {user.isActive ? "Deactivate" : "Activate"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleteUser(user)}
-                          >
-                            Delete User
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </thead>
+              <tbody>
+                {displayUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="p-0">
+                      <EmptyState 
+                        title={`No ${activeTab === 'developers' ? 'Developers' : 'Users'} Found`}
+                        description={`We couldn't find any ${activeTab === 'developers' ? 'developers' : 'users'} matching your current criteria or search query.`}
+                        className="border-none bg-transparent py-20"
+                      />
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                ) : (
+                  displayUsers.map((user: User) => (
+                    <tr
+                      key={user.userId}
+                      className="border-b border-border hover:bg-muted/50 transition-colors"
+                    >
+                      <td
+                        className="px-3 py-2 font-medium truncate max-w-[150px]"
+                        title={
+                          user.businessName && user.businessName !== "null" ? user.businessName : "N/A"
+                        }
+                      >
+                        {user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
+                      </td>
+                      <td
+                        className="px-3 py-2 truncate max-w-[120px]"
+                        title={user.ownerName || "N/A"}
+                      >
+                        {user.ownerName || "N/A"}
+                      </td>
+                      <td
+                        className="px-3 py-2 text-muted-foreground truncate max-w-[150px]"
+                        title={user.email || "N/A"}
+                      >
+                        {user.email || "N/A"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
+                        {user.phone || "N/A"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
+                        {user.alternatePhone || "N/A"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                user.isOnline
+                                  ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+                                  : "bg-gray-300"
+                               }`}
+                            />
+                            <span
+                              className={`font-medium ${
+                                user.isOnline ? "text-green-700" : "text-muted-foreground"
+                              }`}
+                            >
+                              {user.isOnline ? "Online" : "Offline"}
+                            </span>
+                          </div>
+                          {!user.isOnline && user.lastActivity && (
+                            <span className="text-[9px] text-muted-foreground">
+                              Last:{" "}
+                              {new Date(user.lastActivity).toLocaleString([], {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">{user.subscriptionPlan || "N/A"}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                            user.subscriptionStatus === "ACTIVE"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {user.subscriptionStatus || "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                        {user.subscriptionExpiryDate
+                          ? new Date(user.subscriptionExpiryDate).toLocaleDateString()
+                          : "N/A"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {togglingUserId === user.userId ? (
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                            <span className="text-[10px] text-muted-foreground">...</span>
+                          </div>
+                        ) : (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                              user.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {user.isActive ? "Active" : "Not Active"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditUser(user)}>
+                              Edit Subscription
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewLicense(user.userId)}>
+                              <FileText className="w-4 h-4 mr-2" />
+                              View Business License
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setTogglingUserId(user.userId)
+                                toggleStatusMutation.mutate(user.userId)
+                              }}
+                            >
+                              {user.isActive ? "Deactivate" : "Activate"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeleteUser(user)}
+                            >
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </TabsContent>
+        )}
+      </Tabs>
 
       {editUser && (
         <EditSubscriptionModal

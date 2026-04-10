@@ -4,13 +4,15 @@ import { useState, useEffect } from "react"
 import { 
   HelpCircle, 
   BookOpen, 
-  Phone
+  Phone,
+  MessageSquare
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSearchParams } from "react-router-dom"
 import { TicketsTab } from "./TicketsTabNew"
 import { HelpArticlesTab } from "./HelpArticlesTab"
 import { CallRequestsTab } from "./CallRequestsTab"
+import { FeedbacksTab } from "./FeedbacksTab"
 import { getCookie } from "@/lib/fetchWithAuth"
 import { callRequestService } from "@/services/call-request-service"
 
@@ -50,7 +52,7 @@ export default function SupportPage() {
     <div className="space-y-4 animate-in fade-in duration-500 -mt-2">
       {/* Compact Header Integrated with Tabs */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
-        <div>
+        <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold tracking-tight">Support Hub</h1>
         </div>
 
@@ -80,6 +82,13 @@ export default function SupportPage() {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background animate-pulse" />
               )}
             </TabsTrigger>
+            <TabsTrigger 
+              value="feedbacks" 
+              className="h-full px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all text-[10px] font-bold uppercase tracking-widest border-r-2 border-primary/20 last:border-r-0"
+            >
+              <MessageSquare className="w-3.5 h-3.5 mr-2" />
+              Feedbacks
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -99,6 +108,10 @@ export default function SupportPage() {
 
           <TabsContent value="call-requests" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
             <CallRequestsTab />
+          </TabsContent>
+
+          <TabsContent value="feedbacks" className="mt-0 focus-visible:outline-none animate-in slide-in-from-bottom-2 duration-300">
+            <FeedbacksTab />
           </TabsContent>
         </Tabs>
       </div>
