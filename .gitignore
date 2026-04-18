@@ -59,3 +59,4 @@ override.tf.json
 terraform.rc
 myplan
 
+package-lock.json

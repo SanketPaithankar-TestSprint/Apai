@@ -51,10 +51,12 @@ interface User {
   businessName: string | null
   isActive: boolean
   isOnline: boolean
+  isDeveloper: boolean | null
   lastActivity: string | null
   subscriptionStatus: string | null
   subscriptionPlan: string | null
   subscriptionExpiryDate: string | null
+  userType?: string | null
   createdAt: string | null
 }
 
@@ -70,6 +72,7 @@ function EditSubscriptionModal({
   const queryClient = useQueryClient()
   const [status, setStatus] = useState(user.subscriptionStatus || "ACTIVE")
   const [plan, setPlan] = useState(user.subscriptionPlan || "BASIC")
+  const [userType, setUserType] = useState(user.userType || "SHOP_OWNER")
   const [durationMonths, setDurationMonths] = useState("1")
   const [durationDays, setDurationDays] = useState("0")
 
@@ -81,6 +84,7 @@ function EditSubscriptionModal({
         body: JSON.stringify({
           status,
           plan,
+          userType,
           durationMonths: parseInt(durationMonths) || 0,
           durationDays: parseInt(durationDays) || 0,
         }),
@@ -155,6 +159,20 @@ function EditSubscriptionModal({
                 <SelectItem value="BASIC">Basic</SelectItem>
                 <SelectItem value="PRO">Pro</SelectItem>
                 <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">User Type</label>
+            <Select value={userType} onValueChange={setUserType} disabled={isSubmitting}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select user type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MOBILE_TECHNICIAN">Mobile Technician</SelectItem>
+                <SelectItem value="SHOP_OWNER">Shop Owner</SelectItem>
+                <SelectItem value="TINT">Tint</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -451,42 +469,13 @@ export function UsersPage() {
     )
   }
 
-  const mockUsers: User[] = [
-    {
-      userId: 1,
-      ownerName: "John Doe",
-      email: "john@example.com",
-      phone: "9876543210",
-      alternatePhone: "9876543211",
-      businessName: "Tech Solutions",
-      isActive: true,
-      isOnline: true,
-      lastActivity: new Date().toISOString(),
-      subscriptionStatus: "ACTIVE",
-      subscriptionPlan: "Premium",
-      subscriptionExpiryDate: "2026-12-31T23:59:59.999Z",
-      createdAt: "2025-01-01T10:00:00.000Z",
-    },
-    {
-      userId: 2,
-      ownerName: "Jane Smith",
-      email: "jane@example.com",
-      phone: "9876543220",
-      alternatePhone: "9876543221",
-      businessName: "Creative Studio",
-      isActive: true,
-      isOnline: false,
-      lastActivity: new Date(Date.now() - 3600000).toISOString(),
-      subscriptionStatus: "ACTIVE",
-      subscriptionPlan: "Basic",
-      subscriptionExpiryDate: "2026-08-31T23:59:59.999Z",
-      createdAt: "2025-02-15T10:00:00.000Z",
-    },
-  ]
 
-  const dataUsers = users.length > 0 ? users : mockUsers
+  const dataUsers = users.length > 0 ? users : []
 
   const displayUsers = dataUsers.filter(filterUser)
+  
+  const regularUsers = displayUsers.filter(u => !u.isDeveloper)
+  const developerUsers = displayUsers.filter(u => u.isDeveloper)
 
   return (
     <div className="space-y-4">
@@ -537,176 +526,37 @@ export function UsersPage() {
         )}
 
         {!isLoading && (
-        <div className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Business Name</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Owner Name</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Email</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Phone</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Alt Phone</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Activity</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Plan</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Sub Status</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Expiry</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Created At</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Active</th>
-                  <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={12} className="p-0">
-                      <EmptyState 
-                        title="No Users Found"
-                        description="We couldn't find any users matching your current criteria or search query."
-                        className="border-none bg-transparent py-20"
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  displayUsers.map((user: User) => (
-                    <tr
-                      key={user.userId}
-                      className="border-b border-border hover:bg-muted/50 transition-colors"
-                    >
-                      <td
-                        className="px-3 py-2 font-medium truncate max-w-[150px]"
-                        title={
-                          user.businessName && user.businessName !== "null" ? user.businessName : "N/A"
-                        }
-                      >
-                        {user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
-                      </td>
-                      <td
-                        className="px-3 py-2 truncate max-w-[120px]"
-                        title={user.ownerName || "N/A"}
-                      >
-                        {user.ownerName || "N/A"}
-                      </td>
-                      <td
-                        className="px-3 py-2 text-muted-foreground truncate max-w-[150px]"
-                        title={user.email || "N/A"}
-                      >
-                        {user.email || "N/A"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
-                        {user.phone || "N/A"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
-                        {user.alternatePhone || "N/A"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <div
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                user.isOnline
-                                  ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                                  : "bg-gray-300"
-                               }`}
-                            />
-                            <span
-                              className={`font-medium ${
-                                user.isOnline ? "text-green-700" : "text-muted-foreground"
-                              }`}
-                            >
-                              {user.isOnline ? "Online" : "Offline"}
-                            </span>
-                          </div>
-                          {!user.isOnline && user.lastActivity && (
-                            <span className="text-[9px] text-muted-foreground">
-                              Last:{" "}
-                              {new Date(user.lastActivity).toLocaleString([], {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">{user.subscriptionPlan || "N/A"}</td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                            user.subscriptionStatus === "ACTIVE"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {user.subscriptionStatus || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                        {user.subscriptionExpiryDate
-                          ? new Date(user.subscriptionExpiryDate).toLocaleDateString()
-                          : "N/A"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
-                      </td>
-                      <td className="px-3 py-2">
-                        {togglingUserId === user.userId ? (
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
-                            <span className="text-[10px] text-muted-foreground">...</span>
-                          </div>
-                        ) : (
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                              user.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {user.isActive ? "Active" : "Not Active"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditUser(user)}>
-                              Edit Subscription
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleViewLicense(user.userId)}>
-                              <FileText className="w-4 h-4 mr-2" />
-                              View Business License
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setTogglingUserId(user.userId)
-                                toggleStatusMutation.mutate(user.userId)
-                              }}
-                            >
-                              {user.isActive ? "Deactivate" : "Activate"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setDeleteUser(user)}
-                            >
-                              Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-        </div>
-      )}
+          <div className="space-y-8">
+            <UserSection 
+              title="Users" 
+              users={regularUsers} 
+              togglingUserId={togglingUserId}
+              onEdit={setEditUser}
+              onDelete={setDeleteUser}
+              onToggleStatus={(id) => {
+                setTogglingUserId(id)
+                toggleStatusMutation.mutate(id)
+              }}
+              onViewLicense={handleViewLicense}
+            />
+
+            {developerUsers.length > 0 && (
+              <UserSection 
+                title="Developers" 
+                users={developerUsers} 
+                togglingUserId={togglingUserId}
+                onEdit={setEditUser}
+                onDelete={setDeleteUser}
+                onToggleStatus={(id) => {
+                  setTogglingUserId(id)
+                  toggleStatusMutation.mutate(id)
+                }}
+                onViewLicense={handleViewLicense}
+                className="pt-4 border-t-2 border-dashed border-muted"
+              />
+            )}
+          </div>
+        )}
 
       {editUser && (
         <EditSubscriptionModal
@@ -751,6 +601,190 @@ export function UsersPage() {
       </AlertDialog>
 
       <CreateTestAccountModal open={showCreateTest} onOpenChange={setShowCreateTest} />
+    </div>
+  )
+}
+
+function UserSection({
+  title,
+  users,
+  togglingUserId,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onViewLicense,
+  className = "",
+}: {
+  title: string
+  users: User[]
+  togglingUserId: number | null
+  onEdit: (user: User) => void
+  onDelete: (user: User) => void
+  onToggleStatus: (userId: number) => void
+  onViewLicense: (userId: number) => void
+  className?: string
+}) {
+  return (
+    <div className={`space-y-3 ${className}`}>
+      <div className="flex items-center gap-2 px-1">
+        <Users className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          {title} ({users.length})
+        </h2>
+      </div>
+      
+      <div className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-muted/50">
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Business Name</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Owner Name</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Email</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Phone</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Alt Phone</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Activity</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Plan</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">User Type</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Sub Status</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Expiry</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Created At</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Active</th>
+              <th className="px-3 py-2 text-left font-medium whitespace-nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="p-0">
+                  <EmptyState 
+                    title={`No ${title} Found`}
+                    description={`We couldn't find any ${title.toLowerCase()} matching your current criteria or search query.`}
+                    className="border-none bg-transparent py-10"
+                  />
+                </td>
+              </tr>
+            ) : (
+              users.map((user) => (
+                <tr
+                  key={user.userId}
+                  className="border-b border-border hover:bg-muted/50 transition-colors"
+                >
+                  <td
+                    className="px-3 py-2 font-medium truncate max-w-[150px]"
+                    title={user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
+                  >
+                    {user.businessName && user.businessName !== "null" ? user.businessName : "N/A"}
+                  </td>
+                  <td className="px-3 py-2 truncate max-w-[120px]" title={user.ownerName || "N/A"}>
+                    {user.ownerName || "N/A"}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[150px]" title={user.email || "N/A"}>
+                    {user.email || "N/A"}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
+                    {user.phone || "N/A"}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[100px]">
+                    {user.alternatePhone || "N/A"}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            user.isOnline
+                              ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+                              : "bg-gray-300"
+                          }`}
+                        />
+                        <span className={`font-medium ${user.isOnline ? "text-green-700" : "text-muted-foreground"}`}>
+                          {user.isOnline ? "Online" : "Offline"}
+                        </span>
+                      </div>
+                      {!user.isOnline && user.lastActivity && (
+                        <span className="text-[9px] text-muted-foreground">
+                          Last: {new Date(user.lastActivity).toLocaleString([], {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">{user.subscriptionPlan || "N/A"}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 uppercase">
+                      {user.userType?.replace("_", " ") || "N/A"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                        user.subscriptionStatus === "ACTIVE"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {user.subscriptionStatus || "N/A"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                    {user.subscriptionExpiryDate
+                      ? new Date(user.subscriptionExpiryDate).toLocaleDateString()
+                      : "N/A"}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {togglingUserId === user.userId ? (
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] text-muted-foreground">...</span>
+                      </div>
+                    ) : (
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                          user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {user.isActive ? "Active" : "Not Active"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(user)}>
+                          Edit Subscription
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onViewLicense(user.userId)}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          View Business License
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onToggleStatus(user.userId)}>
+                          {user.isActive ? "Deactivate" : "Activate"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(user)}>
+                          Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
