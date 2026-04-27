@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuditLogs } from "@/hooks/useAuditLogs"
 import { 
   Search, 
@@ -23,22 +23,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { format } from "date-fns"
-import { TARGET_TYPES, AUDIT_ACTIONS, type TargetType, type AuditAction } from "@/types/audit-logs"
+import { TARGET_TYPES, AuditAction, type TargetType } from "@/types/audit-logs"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/EmptyState"
 
 interface AuditLogsTabProps {
   adminId: string;
   adminName: string;
+  fixedTargetType?: TargetType;
 }
 
-export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
+export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsTabProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedTargetType, setSelectedTargetType] = useState<TargetType | "all">("all")
+  const [selectedTargetType, setSelectedTargetType] = useState<TargetType | "all">(fixedTargetType || "all")
   const [selectedAction, setSelectedAction] = useState<AuditAction | "all">("all")
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>()
 
-  const { auditLogs, isLoading, error, exportLogs, isExporting } = useAuditLogs({
+  const { auditLogs, isLoading, error, exportLogs, isExporting, fetchNextPage, hasNextPage, isFetchingNextPage } = useAuditLogs({
     targetTypes: selectedTargetType === "all" ? undefined : [selectedTargetType],
     actions: selectedAction === "all" ? undefined : [selectedAction],
     search: searchQuery || undefined,
@@ -52,14 +53,26 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
     exportLogs()
   }
 
-  const getActionIcon = (action: AuditAction) => {
-    if (action.includes('TICKET')) return <FileText className="w-4 h-4" />
-    if (action.includes('ARTICLE')) return <FileText className="w-4 h-4" />
-    if (action.includes('USER')) return <User className="w-4 h-4" />
-    if (action.includes('AGENT')) return <User className="w-4 h-4" />
-    if (action.includes('SYSTEM')) return <Settings className="w-4 h-4" />
-    return <FileText className="w-4 h-4" />
-  }
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+
 
   const getActionColor = (action: AuditAction) => {
     if (action.includes('CREATED')) return 'bg-green-100 text-green-700'
@@ -68,6 +81,14 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
     if (action.includes('LOGIN') || action.includes('LOGOUT')) return 'bg-purple-100 text-purple-700'
     if (action.includes('STATUS_CHANGE') || action.includes('ASSIGNED')) return 'bg-orange-100 text-orange-700'
     return 'bg-gray-100 text-gray-700'
+  }
+
+  const formatPayload = (val: any) => {
+    if (!val) return 'null';
+    if (typeof val === 'string') {
+      try { return JSON.stringify(JSON.parse(val), null, 2) } catch { return val }
+    }
+    return JSON.stringify(val, null, 2)
   }
 
   return (
@@ -84,19 +105,21 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
           />
         </div>
 
-        <Select value={selectedTargetType} onValueChange={(value) => setSelectedTargetType(value as TargetType | "all")}>
-          <SelectTrigger className="w-[140px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
-            <SelectValue placeholder="Target" />
-          </SelectTrigger>
-          <SelectContent className="rounded-none">
-            <SelectItem value="all">All Targets</SelectItem>
-            {Object.values(TARGET_TYPES).map((type) => (
-              <SelectItem key={type} value={type}>
-                {type.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!fixedTargetType && (
+          <Select value={selectedTargetType} onValueChange={(value) => setSelectedTargetType(value as TargetType | "all")}>
+            <SelectTrigger className="w-[140px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
+              <SelectValue placeholder="Target" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All Targets</SelectItem>
+              {Object.values(TARGET_TYPES).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.replace('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <Select value={selectedAction} onValueChange={(value) => setSelectedAction(value as AuditAction | "all")}>
           <SelectTrigger className="w-[140px] h-9 rounded-none border-2 font-bold text-[10px] uppercase">
@@ -104,7 +127,7 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
           </SelectTrigger>
           <SelectContent className="rounded-none">
             <SelectItem value="all">All Actions</SelectItem>
-            {Object.values(AUDIT_ACTIONS).map((action) => (
+            {Object.values(AuditAction).map((action) => (
               <SelectItem key={action} value={action}>
                 {action.replace('_', ' ')}
               </SelectItem>
@@ -149,7 +172,6 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
             <tr className="border-b bg-muted/50 transition-colors">
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Log Agent</th>
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-center">Action Taken</th>
-              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Resource Type</th>
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Resource ID</th>
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-right">Timestamp</th>
             </tr>
@@ -157,22 +179,16 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
           <tbody className="divide-y divide-border">
             {isLoading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center">
+                <td colSpan={4} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <p className="text-muted-foreground font-medium">Loading activity logs...</p>
                   </div>
                 </td>
               </tr>
-            ) : error ? (
+            ) : (error || auditLogs.length === 0) ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-red-500 font-medium whitespace-nowrap">
-                  Error loading logs. Please refresh.
-                </td>
-              </tr>
-            ) : auditLogs.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-0">
+                <td colSpan={4} className="p-0">
                   <EmptyState 
                     title="No Activities Logged"
                     description="No system records match your current choice of agents, targets, or actions."
@@ -192,32 +208,28 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
                       </Avatar>
                       <div className="flex flex-col">
                         <span className="font-bold text-sm tracking-tight">{log.agentName || 'System'}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">ID: {log.agentId.split('-')[0]}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">ID: {String(log.agentId).split('-')[0]}</span>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Badge variant="outline" className={cn("rounded-none border-none text-[10px] h-5 px-2 font-bold uppercase", getActionColor(log.action))}>
-                       {log.action.replace('_', ' ')}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                     <div className="flex items-center gap-2">
-                        <span className="p-1 bg-muted rounded-none border text-muted-foreground group-hover:text-primary transition-colors">
-                           {getActionIcon(log.action)}
-                        </span>
-                        <span className="font-bold uppercase tracking-widest text-[10px]">{log.targetType}</span>
-                     </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <Badge variant="outline" className={cn("rounded-none border-none text-[10px] h-5 px-2 font-bold uppercase", getActionColor(log.action as AuditAction))}>
+                         {(log.action as string).replace('_', ' ')}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
                     {log.targetId}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex flex-col items-end">
-                      <span className="font-bold text-xs">{format(new Date(log.timestamp), 'MMM dd, yy')}</span>
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {format(new Date(log.timestamp), 'HH:mm:ss')}
-                      </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold text-xs">{format(new Date(log.timestamp), 'MMM dd, yy')}</span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {format(new Date(log.timestamp), 'HH:mm:ss')}
+                        </span>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -225,6 +237,17 @@ export function AuditLogsTab({ adminId, adminName }: AuditLogsTabProps) {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div ref={loadMoreRef} className="py-4 flex justify-center text-xs font-medium text-muted-foreground">
+        {isFetchingNextPage ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span>Loading older logs...</span>
+          </div>
+        ) : !hasNextPage && auditLogs.length > 0 ? (
+          "You've reached the end of the logs"
+        ) : null}
       </div>
     </div>
   )

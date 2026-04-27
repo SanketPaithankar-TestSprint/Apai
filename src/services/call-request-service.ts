@@ -1,10 +1,10 @@
 import { API_ENDPOINTS } from "@/constants/api"
 import { fetchWithAuth } from "@/lib/fetchWithAuth"
-import { 
-  CallRequest, 
-  CallRequestParams, 
-  UpdateCallRequestStatus, 
-  AddCallRequestNotes 
+import {
+  CallRequest,
+  CallRequestParams,
+  UpdateCallRequestStatus,
+  AddCallRequestNotes
 } from "@/types/call-request"
 
 export const callRequestService = {

@@ -7,6 +7,8 @@ import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { AuditAction, TARGET_TYPES } from "@/types/audit-logs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -38,6 +40,7 @@ export function BlogViewPage() {
   const [blog, setBlog] = useState<BlogDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { logAction } = useAuditLogs();
 
   useEffect(() => {
     if (!slug) return;
@@ -56,6 +59,17 @@ export function BlogViewPage() {
 
         const data = await response.json();
         setBlog(data);
+        
+        logAction(
+          2,
+          "Sanket Paithankar",
+          AuditAction.ARTICLE_VIEWED,
+          TARGET_TYPES.ARTICLE,
+          data.id?.toString() || slug,
+          null,
+          null
+        ).catch(console.error);
+        
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to load blog";
         setError(errorMessage);
