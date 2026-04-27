@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { MoreVertical, Plus, FileText, Loader2, Search, X, Users } from "lucide-react"
 import { toast } from "sonner"
+import { useAuditLogs } from "@/hooks/useAuditLogs"
+import { AuditAction, TARGET_TYPES } from "@/types/audit-logs"
 import { EmptyState } from "@/components/EmptyState"
 import {
   DropdownMenu,
@@ -75,6 +77,7 @@ function EditSubscriptionModal({
   const [userType, setUserType] = useState(user.userType || "SHOP_OWNER")
   const [durationMonths, setDurationMonths] = useState("1")
   const [durationDays, setDurationDays] = useState("0")
+  const { logAction } = useAuditLogs()
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -93,6 +96,16 @@ function EditSubscriptionModal({
       return response.json()
     },
     onSuccess: () => {
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.USER_UPDATED,
+        TARGET_TYPES.USER,
+        user.userId.toString(),
+        user as any,
+        { status, plan, userType, durationMonths, durationDays }
+      ).catch(console.error)
+
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Subscription updated successfully")
       onOpenChange(false)
@@ -112,6 +125,16 @@ function EditSubscriptionModal({
       return response.json()
     },
     onSuccess: () => {
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.USER_UPDATED,
+        TARGET_TYPES.USER,
+        user.userId.toString(),
+        user as any,
+        { subscription: "cleared" }
+      ).catch(console.error)
+
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Subscription cleared successfully")
       onOpenChange(false)
@@ -246,6 +269,7 @@ function CreateTestAccountModal({
   onOpenChange: (open: boolean) => void
 }) {
   const queryClient = useQueryClient()
+  const { logAction } = useAuditLogs()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
@@ -269,6 +293,17 @@ function CreateTestAccountModal({
       return response.json()
     },
     onSuccess: () => {
+      const createdUserId = result?.userId || email || "test-user"
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.USER_CREATED,
+        TARGET_TYPES.USER,
+        createdUserId.toString(),
+        null,
+        { email, name, phone, businessName }
+      ).catch(console.error)
+
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Test account created successfully")
       setEmail("")
@@ -373,6 +408,7 @@ function CreateTestAccountModal({
 }
 
 export function UsersPage() {
+  const { logAction } = useAuditLogs()
   const queryClient = useQueryClient()
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -417,6 +453,16 @@ export function UsersPage() {
       return response.json()
     },
     onSuccess: () => {
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.USER_STATUS_CHANGE,
+        TARGET_TYPES.USER,
+        userId.toString(),
+        null,
+        null
+      ).catch(console.error)
+
       queryClient.invalidateQueries({ queryKey: ["users"] })
       setTogglingUserId(null)
     },
@@ -443,6 +489,16 @@ export function UsersPage() {
       return response.json()
     },
     onSuccess: () => {
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.USER_DELETED,
+        TARGET_TYPES.USER,
+        userId.toString(),
+        null,
+        null
+      ).catch(console.error)
+
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("User and all associated data deleted successfully")
       setDeleteUser(null)

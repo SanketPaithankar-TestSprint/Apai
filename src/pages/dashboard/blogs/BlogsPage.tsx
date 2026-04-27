@@ -11,17 +11,31 @@ import { Plus, Search, Loader2, MoreVertical } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/EmptyState";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
+import { AuditAction, TARGET_TYPES } from "@/types/audit-logs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function BlogsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [blogToDelete, setBlogToDelete] = useState<Blog | null>(null);
+  const { logAction } = useAuditLogs();
 
   const { data: blogs = [], isLoading } = useQuery({
     queryKey: ["blogs"],
@@ -33,18 +47,48 @@ export function BlogsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => BlogService.delete(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["blogs"] });
       toast.success("Blog deleted successfully");
+      
+      logAction(
+        2,
+        "Sanket Paithankar",
+        AuditAction.BLOG_DELETED,
+        TARGET_TYPES.BLOG,
+        id,
+        null,
+        null
+      ).catch(console.error);
     },
     onError: () => {
       toast.error("Failed to delete blog");
     },
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this blog?")) return;
-    deleteMutation.mutate(id);
+  const handleDelete = async (blog: Blog) => {
+    try {
+      let numericId = blog.id;
+      
+      // If ID is missing (common in list view), fetch full blog details to get the numeric ID
+      if (numericId == null) {
+        toast.loading("Resolving blog ID...", { id: "delete-loading" });
+        const fullBlog = await BlogService.getById(blog.slug);
+        numericId = fullBlog.id;
+      }
+
+      if (numericId != null) {
+        toast.dismiss("delete-loading");
+        deleteMutation.mutate(numericId.toString());
+      } else {
+        toast.error("Cannot delete: Numeric ID could not be resolved", { id: "delete-loading" });
+      }
+    } catch (error) {
+      console.error("Error during blog deletion preparation:", error);
+      toast.error("Failed to fetch blog details for deletion", { id: "delete-loading" });
+    } finally {
+      setBlogToDelete(null);
+    }
   };
 
   const getFilteredBlogs = () => {
@@ -180,22 +224,16 @@ export function BlogsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <a
-                              href={`https://autopaneai.com/blogs/${blog.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
+                            <Link to={`/blogs/view?slug=${blog.slug}`}>
                               View
-                            </a>
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link to={`/blogs/edit?slug=${blog.slug}`}>Edit</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() =>
-                              handleDelete(blog.id != null ? blog.id.toString() : blog.slug)
-                            }
+                            onClick={() => setBlogToDelete(blog)}
                           >
                             Delete
                           </DropdownMenuItem>
@@ -209,6 +247,36 @@ export function BlogsPage() {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!blogToDelete} onOpenChange={(open) => !open && setBlogToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the blog 
+              <span className="font-bold text-foreground"> "{blogToDelete?.title}"</span> 
+              {blogToDelete?.id && <span> (ID: {blogToDelete.id})</span>} and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => blogToDelete && handleDelete(blogToDelete)} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Blog"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

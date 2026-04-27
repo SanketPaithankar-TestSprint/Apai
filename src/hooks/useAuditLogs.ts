@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SupportAuditLog, AuditLogFilters, TargetType, AuditAction } from '@/types/audit-logs';
 import { auditLogsService } from '@/services/auditLogsService';
 
@@ -7,13 +7,22 @@ export function useAuditLogs(filters?: AuditLogFilters) {
   const queryClient = useQueryClient();
 
   const {
-    data: auditLogs = [],
+    data: paginatedData,
     isLoading,
     error,
-    refetch
-  } = useQuery({
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
     queryKey: ['audit-logs', filters],
-    queryFn: () => auditLogsService.getAuditLogs(filters),
+    queryFn: ({ pageParam }) => auditLogsService.getAuditLogs({ ...filters, page: pageParam as number }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const currentPage = lastPage.pageable?.pageNumber ?? 0;
+      const totalPages = lastPage.totalPages ?? 1;
+      return currentPage < totalPages - 1 ? currentPage + 1 : undefined;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -25,12 +34,26 @@ export function useAuditLogs(filters?: AuditLogFilters) {
   });
 
   const exportLogsMutation = useMutation({
-    mutationFn: auditLogsService.exportAuditLogs,
+    mutationFn: async (logsToExport: SupportAuditLog[]) => {
+      // Create a formatted log string
+      const logContent = logsToExport.map(log => {
+        const timestamp = new Date(log.timestamp).toISOString();
+        const agent = log.agentName || 'System';
+        const action = log.action;
+        const target = `${log.targetType || 'UNKNOWN'}:${log.targetId}`;
+        const oldVal = log.oldValue ? `[OLD: ${typeof log.oldValue === 'string' ? log.oldValue : JSON.stringify(log.oldValue)}]` : '';
+        const newVal = log.newValue ? `[NEW: ${typeof log.newValue === 'string' ? log.newValue : JSON.stringify(log.newValue)}]` : '';
+        
+        return `[${timestamp}] ${agent} performed ${action} on ${target} ${oldVal} ${newVal}`.trim();
+      }).join('\n');
+
+      return new Blob([logContent], { type: 'text/plain' });
+    },
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.log`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -58,9 +81,13 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     });
   }, [createLogMutation]);
 
-  const exportLogs = useCallback((exportFilters?: AuditLogFilters) => {
-    return exportLogsMutation.mutateAsync(exportFilters || filters);
-  }, [exportLogsMutation, filters]);
+  const auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
+
+  const exportLogs = useCallback(() => {
+    return exportLogsMutation.mutateAsync(auditLogs);
+  }, [exportLogsMutation, auditLogs]);
 
   return {
     auditLogs,
@@ -70,7 +97,10 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     logAction,
     exportLogs,
     isExporting: exportLogsMutation.isPending,
-    isLogging: createLogMutation.isPending
+    isLogging: createLogMutation.isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   };
 }
 
@@ -97,7 +127,7 @@ export function useAuditLog(id: string) {
 
 export function useTargetAuditLogs(targetType: TargetType, targetId: string) {
   const {
-    data: auditLogs = [],
+    data: paginatedData,
     isLoading,
     error,
     refetch
@@ -107,6 +137,8 @@ export function useTargetAuditLogs(targetType: TargetType, targetId: string) {
     enabled: !!targetId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const auditLogs = paginatedData?.content || [];
 
   return {
     auditLogs,
@@ -118,7 +150,7 @@ export function useTargetAuditLogs(targetType: TargetType, targetId: string) {
 
 export function useAgentAuditLogs(agentId: string) {
   const {
-    data: auditLogs = [],
+    data: paginatedData,
     isLoading,
     error,
     refetch
@@ -128,6 +160,8 @@ export function useAgentAuditLogs(agentId: string) {
     enabled: !!agentId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const auditLogs = paginatedData?.content || [];
 
   return {
     auditLogs,
