@@ -25,5 +25,9 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   } as HeadersInit;
 
+  if (!token) {
+    console.warn(`[fetchWithAuth] No token found in cookies for request to: ${targetUrl}`);
+  }
+
   return fetch(targetUrl, { ...options, headers });
 }

@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { BlogForm } from "@/components/blogs/blog-form";
 import { BlogService } from "@/services/blog-service";
 import type { Blog } from "@/types/blog";
-import { useAuditLogs } from "@/hooks/useAuditLogs";
-import { AuditAction, TARGET_TYPES } from "@/types/audit-logs";
+
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import { API_ENDPOINTS } from "@/constants/api";
 import { Trash2, Loader2 } from "lucide-react";
@@ -42,7 +41,7 @@ export function BlogEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const { logAction } = useAuditLogs();
+
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -75,16 +74,6 @@ export function BlogEditPage() {
       if (!blogId) throw new Error("Blog ID not found");
 
       await BlogService.update(blogId.toString(), data);
-      
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.BLOG_UPDATED,
-        TARGET_TYPES.BLOG,
-        blogId.toString(),
-        blog as any,
-        data
-      ).catch(console.error);
 
       toast.success("Blog updated successfully");
       navigate("/blogs");
@@ -100,16 +89,6 @@ export function BlogEditPage() {
     setDeleting(true);
     try {
       await BlogService.delete(blog.id.toString());
-      
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.BLOG_DELETED,
-        TARGET_TYPES.BLOG,
-        blog.id.toString(),
-        blog as any,
-        null
-      ).catch(console.error);
 
       toast.success("Blog deleted successfully");
       navigate("/blogs");
@@ -167,7 +146,7 @@ export function BlogEditPage() {
       </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Edit Blog</h1>
-        
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="rounded-none font-bold text-xs uppercase h-9">
@@ -179,14 +158,14 @@ export function BlogEditPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the blog 
+                This action cannot be undone. This will permanently delete the blog
                 <span className="font-bold text-foreground"> "{blog.title}"</span> and remove it from our servers.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleDelete} 
+              <AlertDialogAction
+                onClick={handleDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none"
                 disabled={deleting}
               >

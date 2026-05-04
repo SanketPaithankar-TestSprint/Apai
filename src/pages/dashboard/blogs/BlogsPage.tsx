@@ -11,8 +11,7 @@ import { Plus, Search, Loader2, MoreVertical } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/EmptyState";
-import { useAuditLogs } from "@/hooks/useAuditLogs";
-import { AuditAction, TARGET_TYPES } from "@/types/audit-logs";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +34,7 @@ export function BlogsPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [blogToDelete, setBlogToDelete] = useState<Blog | null>(null);
-  const { logAction } = useAuditLogs();
+
 
   const { data: blogs = [], isLoading } = useQuery({
     queryKey: ["blogs"],
@@ -51,15 +50,6 @@ export function BlogsPage() {
       queryClient.invalidateQueries({ queryKey: ["blogs"] });
       toast.success("Blog deleted successfully");
       
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.BLOG_DELETED,
-        TARGET_TYPES.BLOG,
-        id,
-        null,
-        null
-      ).catch(console.error);
     },
     onError: () => {
       toast.error("Failed to delete blog");
@@ -73,7 +63,9 @@ export function BlogsPage() {
       // If ID is missing (common in list view), fetch full blog details to get the numeric ID
       if (numericId == null) {
         toast.loading("Resolving blog ID...", { id: "delete-loading" });
-        const fullBlog = await BlogService.getById(blog.slug);
+        const response = await BlogService.getById(blog.slug);
+        // Handle both flat and wrapped (data: {}) responses
+        const fullBlog = (response as any).data || response;
         numericId = fullBlog.id;
       }
 

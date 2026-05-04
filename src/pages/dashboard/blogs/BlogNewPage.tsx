@@ -6,8 +6,7 @@ import { toast } from "sonner";
 
 import { BlogForm } from "@/components/blogs/blog-form";
 import { BlogService } from "@/services/blog-service";
-import { useAuditLogs } from "@/hooks/useAuditLogs";
-import { AuditAction, TARGET_TYPES } from "@/types/audit-logs";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,7 +19,7 @@ import {
 export function BlogNewPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const { logAction } = useAuditLogs();
+
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
@@ -28,16 +27,7 @@ export function BlogNewPage() {
       const result = await BlogService.create(data);
       const blogId = result?.id || data.slug || "new-blog";
       
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.ARTICLE_CREATED,
-        TARGET_TYPES.ARTICLE,
-        blogId.toString(),
-        null,
-        data
-      ).catch(console.error);
-      
+
       toast.success("Blog created successfully");
       navigate("/blogs");
     } catch (error) {

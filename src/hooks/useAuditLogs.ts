@@ -19,41 +19,34 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     queryFn: ({ pageParam }) => auditLogsService.getAuditLogs({ ...filters, page: pageParam as number }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
-      const currentPage = lastPage.pageable?.pageNumber ?? 0;
+      const currentPage = lastPage.number ?? 0;
       const totalPages = lastPage.totalPages ?? 1;
       return currentPage < totalPages - 1 ? currentPage + 1 : undefined;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const createLogMutation = useMutation({
-    mutationFn: auditLogsService.createAuditLog,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
-    },
-  });
+
 
   const exportLogsMutation = useMutation({
-    mutationFn: async (logsToExport: SupportAuditLog[]) => {
-      // Create a formatted log string
-      const logContent = logsToExport.map(log => {
-        const timestamp = new Date(log.timestamp).toISOString();
-        const agent = log.agentName || 'System';
-        const action = log.action;
-        const target = `${log.targetType || 'UNKNOWN'}:${log.targetId}`;
-        const oldVal = log.oldValue ? `[OLD: ${typeof log.oldValue === 'string' ? log.oldValue : JSON.stringify(log.oldValue)}]` : '';
-        const newVal = log.newValue ? `[NEW: ${typeof log.newValue === 'string' ? log.newValue : JSON.stringify(log.newValue)}]` : '';
-        
-        return `[${timestamp}] ${agent} performed ${action} on ${target} ${oldVal} ${newVal}`.trim();
-      }).join('\n');
+    mutationFn: async ({ logsToExport, fields }: { logsToExport: SupportAuditLog[], fields: (keyof SupportAuditLog)[] }) => {
+      // Filter logs to only include selected fields
+      const filteredLogs = logsToExport.map(log => {
+        const filteredLog: any = {};
+        fields.forEach(field => {
+          filteredLog[field] = log[field];
+        });
+        return filteredLog;
+      });
 
-      return new Blob([logContent], { type: 'text/plain' });
+      const logContent = JSON.stringify(filteredLogs, null, 2);
+      return new Blob([logContent], { type: 'application/json' });
     },
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.log`;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -61,32 +54,41 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     },
   });
 
-  const logAction = useCallback(async (
-    agentId: string,
-    agentName: string,
-    action: AuditAction,
-    targetType: TargetType,
-    targetId: string,
-    oldValue: Record<string, any> | null = null,
-    newValue: Record<string, any> | null = null
-  ) => {
-    return createLogMutation.mutateAsync({
-      agentId,
-      agentName,
-      action,
-      targetType,
-      targetId,
-      oldValue: oldValue || null,
-      newValue: newValue || null
-    });
-  }, [createLogMutation]);
-
-  const auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
+  let auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
 
-  const exportLogs = useCallback(() => {
-    return exportLogsMutation.mutateAsync(auditLogs);
+  if (filters) {
+    if (filters.targetTypes?.length) {
+      auditLogs = auditLogs.filter(log => {
+        // Since backend might omit targetType in payload, infer it from action (e.g. USER_UPDATED -> USER)
+        const targetType = log.targetType || (typeof log.action === 'string' ? log.action.split('_')[0] : '');
+        return filters.targetTypes!.includes(targetType as TargetType);
+      });
+    }
+    if (filters.actions?.length) {
+      auditLogs = auditLogs.filter(log => filters.actions!.includes(log.action as AuditAction));
+    }
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      auditLogs = auditLogs.filter(log => 
+        log.agentName?.toLowerCase().includes(searchLower) ||
+        (typeof log.action === 'string' && log.action.toLowerCase().includes(searchLower)) ||
+        String(log.targetId).toLowerCase().includes(searchLower)
+      );
+    }
+    if (filters.dateRange?.from && filters.dateRange?.to) {
+      const fromTime = new Date(filters.dateRange.from).setHours(0,0,0,0);
+      const toTime = new Date(filters.dateRange.to).setHours(23,59,59,999);
+      auditLogs = auditLogs.filter(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return logTime >= fromTime && logTime <= toTime;
+      });
+    }
+  }
+
+  const exportLogs = useCallback((fields: (keyof SupportAuditLog)[]) => {
+    return exportLogsMutation.mutateAsync({ logsToExport: auditLogs, fields });
   }, [exportLogsMutation, auditLogs]);
 
   return {
@@ -94,10 +96,8 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     isLoading,
     error,
     refetch,
-    logAction,
     exportLogs,
     isExporting: exportLogsMutation.isPending,
-    isLogging: createLogMutation.isPending,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
