@@ -13,7 +13,8 @@ import {
   ChevronDown,
   Loader2,
   Copy,
-  Clock
+  Clock,
+  Eye
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,8 +23,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { AuditLogDetailsModal } from "@/components/audit-logs-components/AuditLogDetailsModal"
 import { format } from "date-fns"
-import { TARGET_TYPES, AuditAction, type TargetType } from "@/types/audit-logs"
+import { TARGET_TYPES, AuditAction, type TargetType, type SupportAuditLog } from "@/types/audit-logs"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/EmptyState"
 
@@ -38,6 +40,7 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
   const [selectedTargetType, setSelectedTargetType] = useState<TargetType | "all">(fixedTargetType || "all")
   const [selectedAction, setSelectedAction] = useState<AuditAction | "all">("all")
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>()
+  const [selectedLog, setSelectedLog] = useState<SupportAuditLog | null>(null)
 
   const { auditLogs, isLoading, error, exportLogs, isExporting, fetchNextPage, hasNextPage, isFetchingNextPage } = useAuditLogs({
     targetTypes: selectedTargetType === "all" ? undefined : [selectedTargetType],
@@ -83,13 +86,6 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
     return 'bg-gray-100 text-gray-700'
   }
 
-  const formatPayload = (val: any) => {
-    if (!val) return 'null';
-    if (typeof val === 'string') {
-      try { return JSON.stringify(JSON.parse(val), null, 2) } catch { return val }
-    }
-    return JSON.stringify(val, null, 2)
-  }
 
   return (
     <div className="space-y-4">
@@ -174,12 +170,13 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-center">Action Taken</th>
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Resource ID</th>
               <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-right">Timestamp</th>
+              <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-right">View</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center">
+                <td colSpan={5} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <p className="text-muted-foreground font-medium">Loading activity logs...</p>
@@ -188,7 +185,7 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
               </tr>
             ) : (error || auditLogs.length === 0) ? (
               <tr>
-                <td colSpan={4} className="p-0">
+                <td colSpan={5} className="p-0">
                   <EmptyState 
                     title="No Activities Logged"
                     description="No system records match your current choice of agents, targets, or actions."
@@ -232,6 +229,11 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
                       </div>
                     </div>
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedLog(log)} title="View Details">
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  </td>
                 </tr>
               ))
             )}
@@ -249,6 +251,11 @@ export function AuditLogsTab({ adminId, adminName, fixedTargetType }: AuditLogsT
           "You've reached the end of the logs"
         ) : null}
       </div>
+
+      <AuditLogDetailsModal 
+        log={selectedLog} 
+        onClose={() => setSelectedLog(null)} 
+      />
     </div>
   )
 }

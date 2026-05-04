@@ -1,11 +1,13 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { MoreVertical, Plus, FileText, Loader2, Search, X, Users } from "lucide-react"
+import { useEffect, useState } from "react"
+import { MoreVertical, Plus, FileText, Loader2, Search, X, Users, Eye, Filter, Calendar as CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
-import { useAuditLogs } from "@/hooks/useAuditLogs"
-import { AuditAction, TARGET_TYPES } from "@/types/audit-logs"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { type DateRange } from "react-day-picker"
+
 import { EmptyState } from "@/components/EmptyState"
 import {
   DropdownMenu,
@@ -22,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +45,7 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchWithAuth } from "@/lib/fetchWithAuth"
 import { API_ENDPOINTS } from "@/constants/api"
 
@@ -77,7 +82,7 @@ function EditSubscriptionModal({
   const [userType, setUserType] = useState(user.userType || "SHOP_OWNER")
   const [durationMonths, setDurationMonths] = useState("1")
   const [durationDays, setDurationDays] = useState("0")
-  const { logAction } = useAuditLogs()
+
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -96,16 +101,6 @@ function EditSubscriptionModal({
       return response.json()
     },
     onSuccess: () => {
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.USER_UPDATED,
-        TARGET_TYPES.USER,
-        user.userId.toString(),
-        user as any,
-        { status, plan, userType, durationMonths, durationDays }
-      ).catch(console.error)
-
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Subscription updated successfully")
       onOpenChange(false)
@@ -125,16 +120,6 @@ function EditSubscriptionModal({
       return response.json()
     },
     onSuccess: () => {
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.USER_UPDATED,
-        TARGET_TYPES.USER,
-        user.userId.toString(),
-        user as any,
-        { subscription: "cleared" }
-      ).catch(console.error)
-
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Subscription cleared successfully")
       onOpenChange(false)
@@ -269,7 +254,7 @@ function CreateTestAccountModal({
   onOpenChange: (open: boolean) => void
 }) {
   const queryClient = useQueryClient()
-  const { logAction } = useAuditLogs()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
@@ -293,17 +278,6 @@ function CreateTestAccountModal({
       return response.json()
     },
     onSuccess: () => {
-      const createdUserId = result?.userId || email || "test-user"
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.USER_CREATED,
-        TARGET_TYPES.USER,
-        createdUserId.toString(),
-        null,
-        { email, name, phone, businessName }
-      ).catch(console.error)
-
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Test account created successfully")
       setEmail("")
@@ -407,15 +381,293 @@ function CreateTestAccountModal({
   )
 }
 
+function ViewUserDetailsModal({
+  user,
+  open,
+  onOpenChange,
+  onEdit,
+}: {
+  user: User
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEdit: (user: User) => void
+}) {
+  const detailItem = (label: string, value: any, colSpan = 1) => (
+    <div className={cn(
+      "flex flex-col gap-1 p-3.5 border border-border/60 rounded-md bg-muted/5",
+      colSpan === 2 ? "md:col-span-2" : colSpan === 3 ? "lg:col-span-3" : ""
+    )}>
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </span>
+      <span className="text-[13px] font-medium text-foreground break-words leading-snug">
+        {value === null || value === undefined ? "N/A" : typeof value === 'boolean' ? (value ? "Yes" : "No") : String(value)}
+      </span>
+    </div>
+  )
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "N/A"
+    try {
+      return format(new Date(dateStr), "PPP p")
+    } catch (e) {
+      return dateStr
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>User Details</DialogTitle>
+          <DialogDescription>
+            Full profile and system details for <strong>{user.ownerName || "Unknown User"}</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+          {/* Primary Info */}
+          {detailItem("User ID", user.userId)}
+          {detailItem("Email Address", user.email, 2)}
+          {detailItem("Owner Name", user.ownerName)}
+          {detailItem("Business Name", user.businessName, 2)}
+          
+          {/* Contact */}
+          {detailItem("Phone Number", user.phone)}
+          {detailItem("Alternate Phone", user.alternatePhone)}
+          
+          {/* Status */}
+          {detailItem("Account Active", user.isActive)}
+          {detailItem("Currently Online", user.isOnline)}
+          {detailItem("Developer Status", user.isDeveloper)}
+          
+          {/* Subscription */}
+          {detailItem("Plan Type", user.subscriptionPlan)}
+          {detailItem("Subscription Status", user.subscriptionStatus)}
+          {detailItem("Expiry Date", formatDate(user.subscriptionExpiryDate))}
+          
+          {/* Activity */}
+          {detailItem("Created At", formatDate(user.createdAt), 2)}
+          {detailItem("Last Activity", formatDate(user.lastActivity), 1)}
+        </div>
+
+        <DialogFooter className="mt-6 gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button onClick={() => {
+            onOpenChange(false)
+            onEdit(user)
+          }}>
+            Edit Subscription
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function UsersFilterModal({
+  open,
+  onOpenChange,
+  filters,
+  onApply,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  filters: any
+  onApply: (filters: any) => void
+}) {
+  const [localFilters, setLocalFilters] = useState(filters)
+
+  // Sync local filters when the modal opens with fresh data
+  useEffect(() => {
+    if (open) {
+      setLocalFilters(filters)
+    }
+  }, [open, filters])
+
+  const handleReset = () => {
+    const reset = {
+      subscriptionStatus: "all",
+      subscriptionPlan: "all",
+      userType: "all",
+      isActive: "all",
+      dateRange: { from: undefined, to: undefined } as DateRange
+    }
+    setLocalFilters(reset)
+    onApply(reset)
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Filter Users</DialogTitle>
+          <DialogDescription>
+            Narrow down the user list based on their status, plan, type, or creation date.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Created Date Range</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !localFilters.dateRange?.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {localFilters.dateRange?.from ? (
+                    localFilters.dateRange.to ? (
+                      <>
+                        {format(localFilters.dateRange.from, "LLL dd, y")} -{" "}
+                        {format(localFilters.dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(localFilters.dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  initialFocus
+                  mode="range"
+                  defaultMonth={localFilters.dateRange?.from}
+                  selected={localFilters.dateRange}
+                  onSelect={(v) => setLocalFilters({ ...localFilters, dateRange: v })}
+                  numberOfMonths={1}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Subscription Status</label>
+            <Select
+              value={localFilters.subscriptionStatus}
+              onValueChange={(v) => setLocalFilters({ ...localFilters, subscriptionStatus: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
+                <SelectItem value="PAST_DUE">Past Due</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Subscription Plan</label>
+            <Select
+              value={localFilters.subscriptionPlan}
+              onValueChange={(v) => setLocalFilters({ ...localFilters, subscriptionPlan: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select plan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Plans</SelectItem>
+                <SelectItem value="TEST">Test</SelectItem>
+                <SelectItem value="BASIC">Basic</SelectItem>
+                <SelectItem value="PRO">Pro</SelectItem>
+                <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">User Type</label>
+            <Select
+              value={localFilters.userType}
+              onValueChange={(v) => setLocalFilters({ ...localFilters, userType: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="MOBILE_TECHNICIAN">Mobile Technician</SelectItem>
+                <SelectItem value="SHOP_OWNER">Shop Owner</SelectItem>
+                <SelectItem value="TINT">Tint</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Account Status</label>
+            <Select
+              value={localFilters.isActive}
+              onValueChange={(v) => setLocalFilters({ ...localFilters, isActive: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active Accounts</SelectItem>
+                <SelectItem value="not_active">Inactive Accounts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter className="flex justify-between items-center sm:justify-between">
+          <Button variant="ghost" onClick={handleReset} className="px-0">
+            Reset All
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              onApply(localFilters)
+              onOpenChange(false)
+            }}>
+              Apply Filters
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function UsersPage() {
-  const { logAction } = useAuditLogs()
+
   const queryClient = useQueryClient()
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   const [editUser, setEditUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
+  const [viewUser, setViewUser] = useState<User | null>(null)
   const [showCreateTest, setShowCreateTest] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [activeFilters, setActiveFilters] = useState({
+    subscriptionStatus: "all",
+    subscriptionPlan: "all",
+    userType: "all",
+    isActive: "all",
+    dateRange: { from: undefined, to: undefined } as DateRange
+  })
+
+  // Ensure useEffect is imported or use it from React
+  useEffect(() => {
+    // If we need any side effects on filter change
+  }, [activeFilters])
 
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -453,16 +705,6 @@ export function UsersPage() {
       return response.json()
     },
     onSuccess: () => {
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.USER_STATUS_CHANGE,
-        TARGET_TYPES.USER,
-        userId.toString(),
-        null,
-        null
-      ).catch(console.error)
-
       queryClient.invalidateQueries({ queryKey: ["users"] })
       setTogglingUserId(null)
     },
@@ -489,16 +731,6 @@ export function UsersPage() {
       return response.json()
     },
     onSuccess: () => {
-      logAction(
-        2,
-        "Sanket Paithankar",
-        AuditAction.USER_DELETED,
-        TARGET_TYPES.USER,
-        userId.toString(),
-        null,
-        null
-      ).catch(console.error)
-
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("User and all associated data deleted successfully")
       setDeleteUser(null)
@@ -517,19 +749,54 @@ export function UsersPage() {
   // Filter both live and mock users
   const filterUser = (user: User) => {
     const query = searchQuery.toLowerCase()
-    return (
+
+    // Search filter
+    const matchesSearch =
       user.ownerName?.toLowerCase().includes(query) ||
       user.email?.toLowerCase().includes(query) ||
       user.userId?.toString().includes(query) ||
       user.businessName?.toLowerCase().includes(query)
-    )
+
+    if (!matchesSearch) return false
+
+    // Status filter
+    if (activeFilters.subscriptionStatus !== "all" && user.subscriptionStatus !== activeFilters.subscriptionStatus) return false
+
+    // Plan filter
+    if (activeFilters.subscriptionPlan !== "all" && user.subscriptionPlan !== activeFilters.subscriptionPlan) return false
+
+    // User Type filter
+    if (activeFilters.userType !== "all" && user.userType !== activeFilters.userType) return false
+
+    // Active status filter
+    if (activeFilters.isActive !== "all") {
+      const targetActive = activeFilters.isActive === "active"
+      if (user.isActive !== targetActive) return false
+    }
+
+    // Date range filter
+    if (activeFilters.dateRange?.from && user.createdAt) {
+      const createdDate = new Date(user.createdAt)
+      const from = new Date(activeFilters.dateRange.from)
+      from.setHours(0, 0, 0, 0)
+      
+      if (createdDate < from) return false
+      
+      if (activeFilters.dateRange.to) {
+        const to = new Date(activeFilters.dateRange.to)
+        to.setHours(23, 59, 59, 999)
+        if (createdDate > to) return false
+      }
+    }
+
+    return true
   }
 
 
   const dataUsers = users.length > 0 ? users : []
 
   const displayUsers = dataUsers.filter(filterUser)
-  
+
   const regularUsers = displayUsers.filter(u => !u.isDeveloper)
   const developerUsers = displayUsers.filter(u => u.isDeveloper)
 
@@ -538,7 +805,7 @@ export function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-1 border-b-2 border-black mb-4">
         <div className="flex items-center gap-6 flex-1">
           <h1 className="text-lg font-bold tracking-tight shrink-0">Users</h1>
-          
+
           <div className="relative w-full max-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -556,6 +823,16 @@ export function UsersPage() {
               </button>
             )}
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-none border-2 px-3"
+            onClick={() => setShowFilters(true)}
+          >
+            <Filter className={`h-4 w-4 ${Object.values(activeFilters).some(v => v !== "all") ? "text-primary fill-primary" : ""}`} />
+            <span className="ml-2 hidden sm:inline">Filters</span>
+          </Button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -566,53 +843,84 @@ export function UsersPage() {
         </div>
       </div>
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-muted-foreground">Loading users...</p>
-            </div>
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground">Loading users...</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {error && (
-          <div className="p-4 bg-destructive/10 text-destructive rounded-none border border-destructive/20 mb-4">
-            {error instanceof Error ? error.message : "Failed to load users"}
-          </div>
-        )}
+      {error && (
+        <div className="p-4 bg-destructive/10 text-destructive rounded-none border border-destructive/20 mb-4">
+          {error instanceof Error ? error.message : "Failed to load users"}
+        </div>
+      )}
 
-        {!isLoading && (
-          <div className="space-y-8">
-            <UserSection 
-              title="Users" 
-              users={regularUsers} 
+      {!isLoading && (
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="mb-4 rounded-none border-b bg-transparent h-auto p-0 flex">
+            <TabsTrigger
+              value="users"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-muted/50 data-[state=active]:shadow-none px-6 py-2.5 font-bold uppercase tracking-wider text-xs flex-1 md:flex-none md:w-[200px]"
+            >
+              Users ({regularUsers.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="developers"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-muted/50 data-[state=active]:shadow-none px-6 py-2.5 font-bold uppercase tracking-wider text-xs flex-1 md:flex-none md:w-[200px]"
+            >
+              Developers ({developerUsers.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="mt-0 outline-none">
+            <UserSection
+              title="Users"
+              users={regularUsers}
               togglingUserId={togglingUserId}
               onEdit={setEditUser}
               onDelete={setDeleteUser}
+              onViewUserDetails={setViewUser}
               onToggleStatus={(id) => {
                 setTogglingUserId(id)
                 toggleStatusMutation.mutate(id)
               }}
               onViewLicense={handleViewLicense}
+              hideHeader
             />
+          </TabsContent>
 
-            {developerUsers.length > 0 && (
-              <UserSection 
-                title="Developers" 
-                users={developerUsers} 
-                togglingUserId={togglingUserId}
-                onEdit={setEditUser}
-                onDelete={setDeleteUser}
-                onToggleStatus={(id) => {
-                  setTogglingUserId(id)
-                  toggleStatusMutation.mutate(id)
-                }}
-                onViewLicense={handleViewLicense}
-                className="pt-4 border-t-2 border-dashed border-muted"
-              />
-            )}
-          </div>
-        )}
+          <TabsContent value="developers" className="mt-0 outline-none">
+            <UserSection
+              title="Developers"
+              users={developerUsers}
+              togglingUserId={togglingUserId}
+              onEdit={setEditUser}
+              onDelete={setDeleteUser}
+              onViewUserDetails={setViewUser}
+              onToggleStatus={(id) => {
+                setTogglingUserId(id)
+                toggleStatusMutation.mutate(id)
+              }}
+              onViewLicense={handleViewLicense}
+              hideHeader
+            />
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {viewUser && (
+        <ViewUserDetailsModal
+          user={viewUser}
+          open={!!viewUser}
+          onOpenChange={(open) => {
+            if (!open) setViewUser(null)
+          }}
+          onEdit={setEditUser}
+        />
+      )}
 
       {editUser && (
         <EditSubscriptionModal
@@ -657,6 +965,13 @@ export function UsersPage() {
       </AlertDialog>
 
       <CreateTestAccountModal open={showCreateTest} onOpenChange={setShowCreateTest} />
+
+      <UsersFilterModal
+        open={showFilters}
+        onOpenChange={setShowFilters}
+        filters={activeFilters}
+        onApply={setActiveFilters}
+      />
     </div>
   )
 }
@@ -667,28 +982,34 @@ function UserSection({
   togglingUserId,
   onEdit,
   onDelete,
+  onViewUserDetails,
   onToggleStatus,
   onViewLicense,
   className = "",
+  hideHeader,
 }: {
   title: string
   users: User[]
   togglingUserId: number | null
   onEdit: (user: User) => void
   onDelete: (user: User) => void
+  onViewUserDetails: (user: User) => void
   onToggleStatus: (userId: number) => void
   onViewLicense: (userId: number) => void
   className?: string
+  hideHeader?: boolean
 }) {
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center gap-2 px-1">
-        <Users className="w-4 h-4 text-muted-foreground" />
-        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-          {title} ({users.length})
-        </h2>
-      </div>
-      
+      {!hideHeader && (
+        <div className="flex items-center gap-2 px-1">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            {title} ({users.length})
+          </h2>
+        </div>
+      )}
+
       <div className="mt-0 border border-border rounded-none overflow-x-auto shadow-sm">
         <table className="w-full text-xs">
           <thead>
@@ -712,7 +1033,7 @@ function UserSection({
             {users.length === 0 ? (
               <tr>
                 <td colSpan={12} className="p-0">
-                  <EmptyState 
+                  <EmptyState
                     title={`No ${title} Found`}
                     description={`We couldn't find any ${title.toLowerCase()} matching your current criteria or search query.`}
                     className="border-none bg-transparent py-10"
@@ -747,11 +1068,10 @@ function UserSection({
                     <div className="flex flex-col gap-0.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <div
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            user.isOnline
-                              ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                              : "bg-gray-300"
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full ${user.isOnline
+                            ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+                            : "bg-gray-300"
+                            }`}
                         />
                         <span className={`font-medium ${user.isOnline ? "text-green-700" : "text-muted-foreground"}`}>
                           {user.isOnline ? "Online" : "Offline"}
@@ -777,11 +1097,10 @@ function UserSection({
                   </td>
                   <td className="px-3 py-2">
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                        user.subscriptionStatus === "ACTIVE"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${user.subscriptionStatus === "ACTIVE"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                        }`}
                     >
                       {user.subscriptionStatus || "N/A"}
                     </span>
@@ -802,9 +1121,8 @@ function UserSection({
                       </div>
                     ) : (
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                          user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
                       >
                         {user.isActive ? "Active" : "Not Active"}
                       </span>
@@ -818,6 +1136,10 @@ function UserSection({
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onViewUserDetails(user)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View User Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEdit(user)}>
                           Edit Subscription
                         </DropdownMenuItem>

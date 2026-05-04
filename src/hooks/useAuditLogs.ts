@@ -19,19 +19,14 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     queryFn: ({ pageParam }) => auditLogsService.getAuditLogs({ ...filters, page: pageParam as number }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
-      const currentPage = lastPage.pageable?.pageNumber ?? 0;
+      const currentPage = lastPage.number ?? 0;
       const totalPages = lastPage.totalPages ?? 1;
       return currentPage < totalPages - 1 ? currentPage + 1 : undefined;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const createLogMutation = useMutation({
-    mutationFn: auditLogsService.createAuditLog,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
-    },
-  });
+
 
   const exportLogsMutation = useMutation({
     mutationFn: async (logsToExport: SupportAuditLog[]) => {
@@ -61,29 +56,40 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     },
   });
 
-  const logAction = useCallback(async (
-    agentId: string,
-    agentName: string,
-    action: AuditAction,
-    targetType: TargetType,
-    targetId: string,
-    oldValue: Record<string, any> | null = null,
-    newValue: Record<string, any> | null = null
-  ) => {
-    return createLogMutation.mutateAsync({
-      agentId,
-      agentName,
-      action,
-      targetType,
-      targetId,
-      oldValue: oldValue || null,
-      newValue: newValue || null
-    });
-  }, [createLogMutation]);
 
-  const auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
+
+  let auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
+
+  if (filters) {
+    if (filters.targetTypes?.length) {
+      auditLogs = auditLogs.filter(log => {
+        // Since backend might omit targetType in payload, infer it from action (e.g. USER_UPDATED -> USER)
+        const targetType = log.targetType || (typeof log.action === 'string' ? log.action.split('_')[0] : '');
+        return filters.targetTypes!.includes(targetType as TargetType);
+      });
+    }
+    if (filters.actions?.length) {
+      auditLogs = auditLogs.filter(log => filters.actions!.includes(log.action as AuditAction));
+    }
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      auditLogs = auditLogs.filter(log => 
+        log.agentName?.toLowerCase().includes(searchLower) ||
+        (typeof log.action === 'string' && log.action.toLowerCase().includes(searchLower)) ||
+        String(log.targetId).toLowerCase().includes(searchLower)
+      );
+    }
+    if (filters.dateRange?.from && filters.dateRange?.to) {
+      const fromTime = new Date(filters.dateRange.from).setHours(0,0,0,0);
+      const toTime = new Date(filters.dateRange.to).setHours(23,59,59,999);
+      auditLogs = auditLogs.filter(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return logTime >= fromTime && logTime <= toTime;
+      });
+    }
+  }
 
   const exportLogs = useCallback(() => {
     return exportLogsMutation.mutateAsync(auditLogs);
@@ -94,10 +100,8 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     isLoading,
     error,
     refetch,
-    logAction,
     exportLogs,
     isExporting: exportLogsMutation.isPending,
-    isLogging: createLogMutation.isPending,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage

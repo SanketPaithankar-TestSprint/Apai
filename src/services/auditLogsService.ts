@@ -11,6 +11,9 @@ class AuditLogsService {
       // API expects a single action string query param based on swagger, we take the first or pass multiple if backend supports array
       params.append('action', filters.actions.join(','));
     }
+    if (filters?.targetTypes?.length) {
+      params.append('targetType', filters.targetTypes.join(','));
+    }
     if (filters?.agentIds?.length) {
       params.append('agentId', filters.agentIds.join(','));
     }
@@ -57,25 +60,6 @@ class AuditLogsService {
     }
     
     return response.json();
-  }
-
-  async createAuditLog(log: any): Promise<SupportAuditLog> {
-    const response = await fetchWithAuth(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(log),
-    });
-    
-    if (!response.ok) {
-      console.error("POST Audit Log failed:", response.status, response.statusText);
-      throw new Error('Failed to create audit log');
-    }
-    
-    const data = await response.json();
-    console.log("POST Audit Log response:", data);
-    return data;
   }
 
   async getAuditLogsByTarget(targetType: TargetType, targetId: string): Promise<PaginatedResponse<SupportAuditLog>> {
@@ -128,29 +112,7 @@ class AuditLogsService {
     return response.blob();
   }
 
-  // Utility method to log an action
-  async logAction(
-    agentId: any,
-    agentName: string,
-    action: AuditAction,
-    targetType: TargetType,
-    targetId: string,
-    oldValue: Record<string, any> | null = null,
-    newValue: Record<string, any> | null = null
-  ): Promise<SupportAuditLog> {
-    // Intercept with valid backend database user
-    const activeAgentId = 2;
-    const activeAgentName = "Sanket Paithankar";
 
-    return this.createAuditLog({
-      agentId: activeAgentId,
-      agentName: activeAgentName,
-      action,
-      targetId,
-      oldValue: oldValue ? (typeof oldValue === 'string' ? oldValue : JSON.stringify(oldValue)) : null,
-      newValue: newValue ? (typeof newValue === 'string' ? newValue : JSON.stringify(newValue)) : null
-    });
-  }
 }
 
 export const auditLogsService = new AuditLogsService();
