@@ -29,34 +29,30 @@ export function useAuditLogs(filters?: AuditLogFilters) {
 
 
   const exportLogsMutation = useMutation({
-    mutationFn: async (logsToExport: SupportAuditLog[]) => {
-      // Create a formatted log string
-      const logContent = logsToExport.map(log => {
-        const timestamp = new Date(log.timestamp).toISOString();
-        const agent = log.agentName || 'System';
-        const action = log.action;
-        const target = `${log.targetType || 'UNKNOWN'}:${log.targetId}`;
-        const oldVal = log.oldValue ? `[OLD: ${typeof log.oldValue === 'string' ? log.oldValue : JSON.stringify(log.oldValue)}]` : '';
-        const newVal = log.newValue ? `[NEW: ${typeof log.newValue === 'string' ? log.newValue : JSON.stringify(log.newValue)}]` : '';
-        
-        return `[${timestamp}] ${agent} performed ${action} on ${target} ${oldVal} ${newVal}`.trim();
-      }).join('\n');
+    mutationFn: async ({ logsToExport, fields }: { logsToExport: SupportAuditLog[], fields: (keyof SupportAuditLog)[] }) => {
+      // Filter logs to only include selected fields
+      const filteredLogs = logsToExport.map(log => {
+        const filteredLog: any = {};
+        fields.forEach(field => {
+          filteredLog[field] = log[field];
+        });
+        return filteredLog;
+      });
 
-      return new Blob([logContent], { type: 'text/plain' });
+      const logContent = JSON.stringify(filteredLogs, null, 2);
+      return new Blob([logContent], { type: 'application/json' });
     },
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.log`;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     },
   });
-
-
 
   let auditLogs = (paginatedData?.pages.flatMap((page) => page.content) || []).sort((a, b) => {
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
@@ -91,8 +87,8 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     }
   }
 
-  const exportLogs = useCallback(() => {
-    return exportLogsMutation.mutateAsync(auditLogs);
+  const exportLogs = useCallback((fields: (keyof SupportAuditLog)[]) => {
+    return exportLogsMutation.mutateAsync({ logsToExport: auditLogs, fields });
   }, [exportLogsMutation, auditLogs]);
 
   return {

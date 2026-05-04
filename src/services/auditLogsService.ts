@@ -42,7 +42,10 @@ class AuditLogsService {
     // Always sort by timestamp descending (newest first)
     params.append('sort', 'timestamp,desc');
 
-    const response = await fetchWithAuth(`${this.baseUrl}?${params.toString()}`);
+    const fullUrl = `${this.baseUrl}?${params.toString()}`;
+    console.log(`[AuditLogsService] Fetching logs from: ${fullUrl}`);
+
+    const response = await fetchWithAuth(fullUrl);
     if (!response.ok) {
       console.error("GET Audit Logs failed:", response.status, response.statusText);
       throw new Error('Failed to fetch audit logs');
