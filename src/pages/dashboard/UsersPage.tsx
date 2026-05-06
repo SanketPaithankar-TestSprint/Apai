@@ -64,6 +64,7 @@ interface User {
   subscriptionPlan: string | null
   subscriptionExpiryDate: string | null
   userType?: string | null
+  subscriptionServiceType?: string | null
   createdAt: string | null
 }
 
@@ -80,6 +81,7 @@ function EditSubscriptionModal({
   const [status, setStatus] = useState(user.subscriptionStatus || "ACTIVE")
   const [plan, setPlan] = useState(user.subscriptionPlan || "BASIC")
   const [userType, setUserType] = useState(user.userType || "SHOP_OWNER")
+  const [subscriptionType, setSubscriptionType] = useState(user.subscriptionServiceType || "AUTO_GLASS")
   const [durationMonths, setDurationMonths] = useState("1")
   const [durationDays, setDurationDays] = useState("0")
 
@@ -93,6 +95,7 @@ function EditSubscriptionModal({
           status,
           plan,
           userType,
+          subscriptionType,
           durationMonths: parseInt(durationMonths) || 0,
           durationDays: parseInt(durationDays) || 0,
         }),
@@ -167,6 +170,21 @@ function EditSubscriptionModal({
                 <SelectItem value="BASIC">Basic</SelectItem>
                 <SelectItem value="PRO">Pro</SelectItem>
                 <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                <SelectItem value="TINT">Tint Plan</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Service Type (Subscription Type)</label>
+            <Select value={subscriptionType} onValueChange={setSubscriptionType} disabled={isSubmitting}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select service type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AUTO_GLASS">Auto Glass</SelectItem>
+                <SelectItem value="AUTO_GLASS_TINT">Auto Glass + Tint</SelectItem>
+                <SelectItem value="TINT">Tint Only</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -180,7 +198,6 @@ function EditSubscriptionModal({
               <SelectContent>
                 <SelectItem value="MOBILE_TECHNICIAN">Mobile Technician</SelectItem>
                 <SelectItem value="SHOP_OWNER">Shop Owner</SelectItem>
-                <SelectItem value="TINT">Tint</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -431,21 +448,22 @@ function ViewUserDetailsModal({
           {detailItem("Email Address", user.email, 2)}
           {detailItem("Owner Name", user.ownerName)}
           {detailItem("Business Name", user.businessName, 2)}
-          
+
           {/* Contact */}
           {detailItem("Phone Number", user.phone)}
           {detailItem("Alternate Phone", user.alternatePhone)}
-          
+
           {/* Status */}
           {detailItem("Account Active", user.isActive)}
           {detailItem("Currently Online", user.isOnline)}
           {detailItem("Developer Status", user.isDeveloper)}
-          
+
           {/* Subscription */}
           {detailItem("Plan Type", user.subscriptionPlan)}
+          {detailItem("Service Type", user.subscriptionServiceType)}
           {detailItem("Subscription Status", user.subscriptionStatus)}
           {detailItem("Expiry Date", formatDate(user.subscriptionExpiryDate))}
-          
+
           {/* Activity */}
           {detailItem("Created At", formatDate(user.createdAt), 2)}
           {detailItem("Last Activity", formatDate(user.lastActivity), 1)}
@@ -779,9 +797,9 @@ export function UsersPage() {
       const createdDate = new Date(user.createdAt)
       const from = new Date(activeFilters.dateRange.from)
       from.setHours(0, 0, 0, 0)
-      
+
       if (createdDate < from) return false
-      
+
       if (activeFilters.dateRange.to) {
         const to = new Date(activeFilters.dateRange.to)
         to.setHours(23, 59, 59, 999)
