@@ -702,7 +702,7 @@ export function UsersPage() {
       }
 
       const data = await response.json()
-      const usersList = Array.isArray(data) ? data : data.data || data.users || []
+      const usersList = Array.isArray(data) ? data : data.content || data.data || data.users || []
       return usersList as User[]
     },
   })

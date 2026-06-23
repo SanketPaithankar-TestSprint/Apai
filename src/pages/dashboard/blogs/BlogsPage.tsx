@@ -40,7 +40,7 @@ export function BlogsPage() {
     queryKey: ["blogs"],
     queryFn: async () => {
       const data = await BlogService.getAll();
-      return Array.isArray(data) ? data : (data as any).data || [];
+      return Array.isArray(data) ? data : (data as any).content || (data as any).data || [];
     },
   });
 
