@@ -540,7 +540,14 @@ export function BlogForm({ initialData, onSubmit, isLoading }: BlogFormProps) {
                             <FormControl>
                                 <RichTextEditor
                                     value={field.value || ""}
-                                    onChange={(html) => field.onChange(html)}
+                                    onChange={(html) => {
+                                        form.setValue("content", html, {
+                                            shouldDirty: true,
+                                            shouldTouch: true,
+                                            shouldValidate: true,
+                                        });
+                                    }}
+                                    onBlur={field.onBlur}
                                     placeholder="Start writing your blog content..."
                                 />
                             </FormControl>

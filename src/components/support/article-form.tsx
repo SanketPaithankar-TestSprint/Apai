@@ -22,8 +22,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { HelpArticle, HelpCategory, CreateArticleDto } from "@/types/article";
+import { HelpArticle, HelpCategory } from "@/types/article";
 import { RichTextEditor } from "@/components/blogs/rich-text-editor";
+import { ArticleFrontendPreview } from "@/components/support/article-frontend-preview";
 import { Loader2 } from "lucide-react";
 
 const articleSchema = z.object({
@@ -54,6 +55,11 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
             published: initialData?.published ?? true,
         },
     });
+    const previewTitle = form.watch("title");
+    const previewDescription = form.watch("description");
+    const previewCategoryId = form.watch("categoryId");
+    const previewContent = form.watch("content");
+    const previewCategory = categories.find((cat) => cat.id === previewCategoryId);
 
     const onFormSubmit = (values: ArticleFormValues) => {
         onSubmit(values);
@@ -62,115 +68,139 @@ export function ArticleForm({ initialData, categories, onSubmit, isLoading }: Ar
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
-                <FormField<ArticleFormValues>
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Article Title</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    placeholder="e.g. How to reset your password" 
-                                    {...field} 
-                                    value={field.value as string} 
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField<ArticleFormValues>
-                        control={form.control}
-                        name="categoryId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Category</FormLabel>
-                                <Select 
-                                    onValueChange={(val) => field.onChange(parseInt(val))} 
-                                    defaultValue={field.value?.toString()}
-                                >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    {/* Left Column: Form Editor */}
+                    <div className="space-y-6 bg-card border-2 border-border p-6 shadow-sm">
+                        <FormField<ArticleFormValues>
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Article Title</FormLabel>
                                     <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a category" />
-                                        </SelectTrigger>
+                                        <Input 
+                                            placeholder="e.g. How to reset your password" 
+                                            {...field} 
+                                            value={field.value as string} 
+                                        />
                                     </FormControl>
-                                    <SelectContent>
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat.id} value={cat.id.toString()}>
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                    <FormField<ArticleFormValues>
-                        control={form.control}
-                        name="published"
-                        render={({ field }) => (
-                             <FormItem className="flex flex-row items-center justify-between rounded-none border-2 p-4 shadow-sm">
-                                <div className="space-y-0.5">
-                                    <FormLabel className="text-xs font-black uppercase tracking-widest">Published</FormLabel>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Make this article visible to users.</p>
-                                </div>
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value as boolean}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField<ArticleFormValues>
+                                control={form.control}
+                                name="categoryId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Category</FormLabel>
+                                        <Select 
+                                            onValueChange={(val) => field.onChange(parseInt(val))} 
+                                            defaultValue={field.value?.toString()}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a category" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {categories.map((cat) => (
+                                                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                <FormField<ArticleFormValues>
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-black uppercase tracking-widest">Short Description</FormLabel>
-                            <FormControl>
-                                <Textarea 
-                                    placeholder="Briefly describe what this article covers..." 
-                                    className="resize-none rounded-none border-2 h-20"
-                                    {...field} 
-                                    value={field.value as string}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <FormField<ArticleFormValues>
+                                control={form.control}
+                                name="published"
+                                render={({ field }) => (
+                                     <FormItem className="flex flex-row items-center justify-between rounded-none border-2 p-4 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-xs font-black uppercase tracking-widest">Published</FormLabel>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Make this article visible to users.</p>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value as boolean}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-                <FormField<ArticleFormValues>
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-black uppercase tracking-widest">Article Content</FormLabel>
-                            <FormControl className="rounded-none border-2">
-                                <RichTextEditor
-                                    value={field.value as string}
-                                    onChange={field.onChange}
-                                    placeholder="Start writing the help article content..."
-                                />
-                            </FormControl>
-                            <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                        <FormField<ArticleFormValues>
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-black uppercase tracking-widest">Short Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea 
+                                            placeholder="Briefly describe what this article covers..." 
+                                            className="resize-none rounded-none border-2 h-20"
+                                            {...field} 
+                                            value={field.value as string}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                <div className="flex justify-end gap-3 pt-4">
-                    <Button type="submit" disabled={isLoading} className="w-full md:w-auto px-10 h-10 rounded-none font-bold uppercase tracking-widest text-xs">
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {initialData ? "Update Article" : "Create Article"}
-                    </Button>
+                        <FormField<ArticleFormValues>
+                            control={form.control}
+                            name="content"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-black uppercase tracking-widest">Article Content</FormLabel>
+                                    <FormControl className="rounded-none border-2">
+                                        <RichTextEditor
+                                            value={field.value as string}
+                                            onChange={(html) => {
+                                                form.setValue("content", html, {
+                                                    shouldDirty: true,
+                                                    shouldTouch: true,
+                                                    shouldValidate: true,
+                                                });
+                                            }}
+                                            onBlur={field.onBlur}
+                                            placeholder="Start writing the help article content..."
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <Button type="submit" disabled={isLoading} className="w-full md:w-auto px-10 h-10 rounded-none font-bold uppercase tracking-widest text-xs">
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {initialData ? "Update Article" : "Create Article"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Live Frontend Preview */}
+                    <div className="space-y-4">
+                        <ArticleFrontendPreview
+                            title={previewTitle}
+                            description={previewDescription}
+                            categoryName={previewCategory?.name || initialData?.categoryName}
+                            content={previewContent}
+                            lastUpdated={initialData?.lastUpdated}
+                            hideSidebar={true}
+                        />
+                    </div>
                 </div>
             </form>
         </Form>
