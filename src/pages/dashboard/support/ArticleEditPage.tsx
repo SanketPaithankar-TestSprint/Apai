@@ -79,76 +79,27 @@ export default function ArticleEditPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/">Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/support?tab=articles">Support Hub</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink 
-                asChild 
-                title={article.title}
-                className="max-w-[150px] truncate"
-              >
-                <Link to={`/support/articles/edit/${id}`}>{article.title}</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Edit</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+    <div className="max-w-[1600px] w-full mx-auto py-6 px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6 flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => navigate(-1)} 
+          className="rounded-none hover:bg-muted shrink-0 border-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-2xl font-black tracking-tight leading-none truncate max-w-2xl">
+          Edit: {article.title}
+        </h1>
       </div>
 
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => navigate(-1)} 
-            className="rounded-none hover:bg-muted shrink-0 border-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest leading-none">Edit Article</span>
-            </div>
-            <h1 className="text-3xl font-black tracking-tight leading-none mb-4 truncate max-w-xl">{article.title}</h1>
-            <div className="flex flex-wrap gap-4 items-center">
-                <Badge variant="outline" className="rounded-full bg-primary/5 text-primary border-primary/20 px-3 py-1 font-bold">
-                    {article.categoryName}
-                </Badge>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Last Updated: {article.lastUpdated ? new Date(article.lastUpdated).toLocaleDateString() : "Unknown"}
-                </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-card border-2 border-border rounded-none p-8 shadow-sm">
-        <ArticleForm
-          initialData={article}
-          categories={categories}
-          onSubmit={(data) => updateMutation.mutate(data)}
-          isLoading={updateMutation.isPending}
-        />
-      </div>
+      <ArticleForm
+        initialData={article}
+        categories={categories}
+        onSubmit={(data) => updateMutation.mutate(data)}
+        isLoading={updateMutation.isPending}
+      />
     </div>
   )
 }

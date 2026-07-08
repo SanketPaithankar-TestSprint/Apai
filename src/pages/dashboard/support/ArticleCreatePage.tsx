@@ -40,56 +40,26 @@ export default function ArticleCreatePage() {
   })
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/">Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/support?tab=articles">Support Hub</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>New Article</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+    <div className="max-w-[1600px] w-full mx-auto py-6 px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6 flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => navigate(-1)} 
+          className="rounded-none hover:bg-muted border-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-2xl font-black tracking-tight leading-none">
+          Create New Article
+        </h1>
       </div>
 
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => navigate(-1)} 
-            className="rounded-none hover:bg-muted border-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Support Hub</span>
-            </div>
-            <h1 className="text-3xl font-black tracking-tight">Create New Article</h1>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-card border-2 border-border rounded-none p-8 shadow-sm">
-        <ArticleForm
-          categories={categories}
-          onSubmit={(data) => createMutation.mutate(data)}
-          isLoading={createMutation.isPending}
-        />
-      </div>
+      <ArticleForm
+        categories={categories}
+        onSubmit={(data) => createMutation.mutate(data)}
+        isLoading={createMutation.isPending}
+      />
     </div>
   )
 }

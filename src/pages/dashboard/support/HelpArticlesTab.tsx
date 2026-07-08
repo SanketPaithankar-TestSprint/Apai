@@ -14,7 +14,7 @@ import {
   Loader2,
   FileText,
   Calendar,
-  Filter,
+  Eye,
   CheckCircle2,
   XCircle,
   Settings
@@ -85,6 +85,10 @@ export function HelpArticlesTab() {
 
   const handleEdit = (article: HelpArticle) => {
     navigate(`/support/articles/edit/${article.id}`)
+  }
+
+  const handlePreview = (article: HelpArticle) => {
+    navigate(`/support/articles/preview/${article.id}`)
   }
 
   const handleDelete = (id: string) => {
@@ -187,7 +191,7 @@ export function HelpArticlesTab() {
                   <tr key={article.id} className="hover:bg-muted/20 transition-colors group">
                     <td className="px-6 py-4">
                         <div className="flex flex-col">
-                            <span className="font-bold text-foreground group-hover:text-primary transition-colors cursor-pointer" onClick={() => handleEdit(article)}>
+                            <span className="font-bold text-foreground group-hover:text-primary transition-colors cursor-pointer" onClick={() => handlePreview(article)}>
                                 {article.title}
                             </span>
                             <span className="text-xs text-muted-foreground truncate max-w-[300px] mt-0.5">
@@ -223,6 +227,9 @@ export function HelpArticlesTab() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 transition-opacity">
+                        <Button variant="ghost" size="icon" onClick={() => handlePreview(article)} className="h-8 w-8 rounded-full">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(article)} className="h-8 w-8 rounded-full">
                           <Edit3 className="h-4 w-4" />
                         </Button>
