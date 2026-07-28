@@ -12,6 +12,7 @@ const BlogNewPage = lazy(() => import("@/pages/dashboard/blogs/BlogNewPage"));
 const BlogEditPage = lazy(() => import("@/pages/dashboard/blogs/BlogEditPage"));
 const BlogViewPage = lazy(() => import("@/pages/dashboard/blogs/BlogViewPage"));
 const UsersPage = lazy(() => import("@/pages/dashboard/UsersPage"));
+const UserAnalysisPage = lazy(() => import("@/pages/dashboard/UserAnalysisPage"));
 const SupportPage = lazy(() => import("@/pages/dashboard/support/SupportPage"));
 const AuditLogsPage = lazy(() => import("@/pages/dashboard/AuditLogsPage"));
 const ArticleCreatePage = lazy(() => import("@/pages/dashboard/support/ArticleCreatePage"));
@@ -40,6 +41,8 @@ export default function App() {
           <Route path="/blogs/edit" element={<BlogEditPage />} />
           <Route path="/blogs/view" element={<BlogViewPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/user-analysis/:userId" element={<UserAnalysisPage />} />
+          <Route path="/users/:userId/analysis" element={<UserAnalysisPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/support/articles/create" element={<ArticleCreatePage />} />
