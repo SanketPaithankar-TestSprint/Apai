@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   ADMIN_USER_SUBSCRIPTION: (userId: number) => `${API_BASE_URL}admin/users/${userId}/subscription`,
   ADMIN_USER_DELETE: (userId: number) => `${API_BASE_URL}admin/users/${userId}`,
   ADMIN_USER_BUSINESS_LICENSE: (userId: number) => `${API_BASE_URL}admin/users/${userId}/business-license`,
+  ADMIN_USER_ANALYSIS: (userId: number, days = 7) => `${API_BASE_URL}admin/users/${userId}/analysis?days=${days}`,
   ADMIN_CREATE_TEST_ACCOUNT: `${API_BASE_URL}admin/users/test-account`,
   
   // Support Tickets

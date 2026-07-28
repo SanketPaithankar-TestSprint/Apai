@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
-import { MoreVertical, Plus, FileText, Loader2, Search, X, Users, Eye, Filter, Calendar as CalendarIcon } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { MoreVertical, Plus, FileText, Loader2, Search, X, Users, Eye, Filter, Calendar as CalendarIcon, Trash2, BarChart3 } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -666,11 +667,13 @@ function UsersFilterModal({
 export function UsersPage() {
 
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [togglingUserId, setTogglingUserId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   const [editUser, setEditUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
+  const [deleteConfirmationEmail, setDeleteConfirmationEmail] = useState("")
   const [viewUser, setViewUser] = useState<User | null>(null)
   const [showCreateTest, setShowCreateTest] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
@@ -752,10 +755,12 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("User and all associated data deleted successfully")
       setDeleteUser(null)
+      setDeleteConfirmationEmail("")
     },
     onError: () => {
       toast.error("Failed to delete user")
       setDeleteUser(null)
+      setDeleteConfirmationEmail("")
     },
   })
 
@@ -901,6 +906,7 @@ export function UsersPage() {
               onEdit={setEditUser}
               onDelete={setDeleteUser}
               onViewUserDetails={setViewUser}
+              onOpenAnalysis={(userId) => navigate(`/user-analysis/${userId}`)}
               onToggleStatus={(id) => {
                 setTogglingUserId(id)
                 toggleStatusMutation.mutate(id)
@@ -918,6 +924,7 @@ export function UsersPage() {
               onEdit={setEditUser}
               onDelete={setDeleteUser}
               onViewUserDetails={setViewUser}
+              onOpenAnalysis={(userId) => navigate(`/user-analysis/${userId}`)}
               onToggleStatus={(id) => {
                 setTogglingUserId(id)
                 toggleStatusMutation.mutate(id)
@@ -950,7 +957,15 @@ export function UsersPage() {
         />
       )}
 
-      <AlertDialog open={!!deleteUser} onOpenChange={(open) => { if (!open) setDeleteUser(null) }}>
+      <AlertDialog
+        open={!!deleteUser}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteUser(null)
+            setDeleteConfirmationEmail("")
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -958,6 +973,19 @@ export function UsersPage() {
               This will permanently delete <strong>{deleteUser?.ownerName}</strong> ({deleteUser?.email}) and all associated data including Shops, Employees, Customers, and Documents. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="grid gap-2 py-2">
+            <label className="text-sm font-medium" htmlFor="delete-user-email-confirmation">
+              Type the user's email to confirm
+            </label>
+            <Input
+              id="delete-user-email-confirmation"
+              value={deleteConfirmationEmail}
+              onChange={(e) => setDeleteConfirmationEmail(e.target.value)}
+              placeholder={deleteUser?.email || "user@example.com"}
+              disabled={deleteUserMutation.isPending}
+              autoComplete="off"
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteUserMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -967,7 +995,10 @@ export function UsersPage() {
                   deleteUserMutation.mutate(deleteUser.userId)
                 }
               }}
-              disabled={deleteUserMutation.isPending}
+              disabled={
+                deleteUserMutation.isPending ||
+                deleteConfirmationEmail.trim().toLowerCase() !== deleteUser?.email?.toLowerCase()
+              }
             >
               {deleteUserMutation.isPending ? (
                 <>
@@ -1001,6 +1032,7 @@ function UserSection({
   onEdit,
   onDelete,
   onViewUserDetails,
+  onOpenAnalysis,
   onToggleStatus,
   onViewLicense,
   className = "",
@@ -1012,6 +1044,7 @@ function UserSection({
   onEdit: (user: User) => void
   onDelete: (user: User) => void
   onViewUserDetails: (user: User) => void
+  onOpenAnalysis: (userId: number) => void
   onToggleStatus: (userId: number) => void
   onViewLicense: (userId: number) => void
   className?: string
@@ -1062,7 +1095,8 @@ function UserSection({
               users.map((user) => (
                 <tr
                   key={user.userId}
-                  className="border-b border-border hover:bg-muted/50 transition-colors"
+                  className="border-b border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => onOpenAnalysis(user.userId)}
                 >
                   <td
                     className="px-3 py-2 font-medium truncate max-w-[150px]"
@@ -1146,7 +1180,7 @@ function UserSection({
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="p-1 hover:bg-muted rounded transition-colors cursor-pointer">
@@ -1154,6 +1188,10 @@ function UserSection({
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onOpenAnalysis(user.userId)}>
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          View User Analytics
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onViewUserDetails(user)}>
                           <Eye className="w-4 h-4 mr-2" />
                           View User Details
@@ -1170,6 +1208,7 @@ function UserSection({
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => onDelete(user)}>
+                          <Trash2 className="w-4 h-4 mr-2" />
                           Delete User
                         </DropdownMenuItem>
                       </DropdownMenuContent>
