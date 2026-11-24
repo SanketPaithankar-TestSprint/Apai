@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { MoreVertical, Plus, FileText, Loader2, Search, X, Users, Eye, Filter, Calendar as CalendarIcon, Trash2, BarChart3 } from "lucide-react"
+import { MoreVertical, Plus, FileText, Loader2, Search, X, Users, Eye, Filter, Calendar as CalendarIcon, Trash2, BarChart3, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -49,6 +49,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchWithAuth } from "@/lib/fetchWithAuth"
 import { API_ENDPOINTS } from "@/constants/api"
+import { SmsCreditsModal } from "@/components/users/SmsCreditsModal"
 
 interface User {
   userId: number
@@ -672,6 +673,7 @@ export function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   const [editUser, setEditUser] = useState<User | null>(null)
+  const [smsCreditsUser, setSmsCreditsUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
   const [deleteConfirmationEmail, setDeleteConfirmationEmail] = useState("")
   const [viewUser, setViewUser] = useState<User | null>(null)
@@ -904,6 +906,7 @@ export function UsersPage() {
               users={regularUsers}
               togglingUserId={togglingUserId}
               onEdit={setEditUser}
+              onSmsCredits={setSmsCreditsUser}
               onDelete={setDeleteUser}
               onViewUserDetails={setViewUser}
               onOpenAnalysis={(userId) => navigate(`/user-analysis/${userId}`)}
@@ -922,6 +925,7 @@ export function UsersPage() {
               users={developerUsers}
               togglingUserId={togglingUserId}
               onEdit={setEditUser}
+              onSmsCredits={setSmsCreditsUser}
               onDelete={setDeleteUser}
               onViewUserDetails={setViewUser}
               onOpenAnalysis={(userId) => navigate(`/user-analysis/${userId}`)}
@@ -953,6 +957,16 @@ export function UsersPage() {
           open={!!editUser}
           onOpenChange={(open) => {
             if (!open) setEditUser(null)
+          }}
+        />
+      )}
+
+      {smsCreditsUser && (
+        <SmsCreditsModal
+          user={smsCreditsUser}
+          open={!!smsCreditsUser}
+          onOpenChange={(open) => {
+            if (!open) setSmsCreditsUser(null)
           }}
         />
       )}
@@ -1030,6 +1044,7 @@ function UserSection({
   users,
   togglingUserId,
   onEdit,
+  onSmsCredits,
   onDelete,
   onViewUserDetails,
   onOpenAnalysis,
@@ -1042,6 +1057,7 @@ function UserSection({
   users: User[]
   togglingUserId: number | null
   onEdit: (user: User) => void
+  onSmsCredits: (user: User) => void
   onDelete: (user: User) => void
   onViewUserDetails: (user: User) => void
   onOpenAnalysis: (userId: number) => void
@@ -1198,6 +1214,10 @@ function UserSection({
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEdit(user)}>
                           Edit Subscription
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSmsCredits(user)}>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          SMS Credits
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onViewLicense(user.userId)}>
                           <FileText className="w-4 h-4 mr-2" />

@@ -3,6 +3,16 @@ import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tansta
 import { SupportAuditLog, AuditLogFilters, TargetType, AuditAction } from '@/types/audit-logs';
 import { auditLogsService } from '@/services/auditLogsService';
 
+// Actions whose prefix doesn't match their target type (e.g. SMS_CREDITS_GRANTED targets a USER)
+const ACTION_TARGET_OVERRIDES: Record<string, TargetType> = {
+  [AuditAction.SMS_CREDITS_GRANTED]: 'USER',
+};
+
+function inferTargetType(action: AuditAction | string): string {
+  if (typeof action !== 'string') return '';
+  return ACTION_TARGET_OVERRIDES[action] ?? action.split('_')[0];
+}
+
 export function useAuditLogs(filters?: AuditLogFilters) {
   const queryClient = useQueryClient();
 
@@ -62,7 +72,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     if (filters.targetTypes?.length) {
       auditLogs = auditLogs.filter(log => {
         // Since backend might omit targetType in payload, infer it from action (e.g. USER_UPDATED -> USER)
-        const targetType = log.targetType || (typeof log.action === 'string' ? log.action.split('_')[0] : '');
+        const targetType = log.targetType || inferTargetType(log.action);
         return filters.targetTypes!.includes(targetType as TargetType);
       });
     }

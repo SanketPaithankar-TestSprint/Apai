@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
   ADMIN_USERS: `${API_BASE_URL}admin/users`,
   ADMIN_USER_STATUS: (userId: number) => `${API_BASE_URL}admin/users/${userId}/status`,
   ADMIN_USER_SUBSCRIPTION: (userId: number) => `${API_BASE_URL}admin/users/${userId}/subscription`,
+  ADMIN_USER_SMS_CREDITS: (userId: number) => `${API_BASE_URL}admin/users/${userId}/sms-credits`,
   ADMIN_USER_DELETE: (userId: number) => `${API_BASE_URL}admin/users/${userId}`,
   ADMIN_USER_BUSINESS_LICENSE: (userId: number) => `${API_BASE_URL}admin/users/${userId}/business-license`,
   ADMIN_USER_ANALYSIS: (userId: number, days = 7) => `${API_BASE_URL}admin/users/${userId}/analysis?days=${days}`,
